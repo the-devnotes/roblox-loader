@@ -60,5 +60,5 @@
         autoScroll = v
         if v then refreshLogUI() end
     end)
-    pgLog:note("Log dibatasi 250 baris terakhir supaya ringan di HP. Copy All untuk menyimpan ke clipboard.")
+    pgLog:note("Disimpan 4000 baris (maks 3000 karakter/baris). Tampilan hanya 300 baris terakhir supaya ringan; Copy All mengambil semua.")
 

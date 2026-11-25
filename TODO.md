@@ -1,5 +1,10 @@
 # TODO / handoff cepat
 
+## v5.9c — kapasitas log
+- `MAX_LOG` 250 → `LOG_CAP.store = 4000`, panjang baris 420 → 3000 karakter.
+- UI Log hanya merender 300 baris terakhir + penanda "... N baris sebelumnya disembunyikan ..." supaya tetap ringan di HP.
+- `Copy All` tetap mengambil seluruh isi buffer (4000 baris).
+
 ## v5.9b — RarityNumber asli dari log user
 - Log `RARITY MODULE: {Rarities={Exclusive={RarityNumber=7,...}, BrainrotGod={RarityNumber=6,...}}}` membuktikan urutan rarity game ada di field `RarityNumber`, bukan tebakan `common/uncommon/...`.
 - `readRarityModule()` sekarang membangun `catalog.rarityNumber` dari `data.Rarities` (kunci, `_id`, `DisplayName`) dan memperpanjang `RARITY`/`RARITY_LABEL`/`RARITY_NAMES` sampai `RarityNumber` maksimal.

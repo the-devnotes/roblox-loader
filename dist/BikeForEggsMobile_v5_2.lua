@@ -1115,7 +1115,9 @@ local function boot()
 
     --[[ ===================== 6. LOG SYSTEM ===================== ]]
     local logs = {}
-    local MAX_LOG = 250
+    -- Simpan banyak baris untuk Copy All, tapi tampilkan hanya sebagian agar
+    -- TextLabel tidak berat di HP.
+    local LOG_CAP = { store = 4000, line = 3000, ui = 300 }
     local logDirty = true
     local logScroll, logLabel
     local autoScroll = true
@@ -1126,15 +1128,27 @@ local function boot()
             parts[i] = tostring(select(i, ...))
         end
         local line = string.format("[%s] %s", os.date("%H:%M:%S"), table.concat(parts, " "))
-        if #line > 420 then line = line:sub(1, 420) .. "..." end
+        if #line > LOG_CAP.line then line = line:sub(1, LOG_CAP.line) .. "..." end
         logs[#logs + 1] = line
-        if #logs > MAX_LOG then table.remove(logs, 1) end
+        if #logs > LOG_CAP.store then table.remove(logs, 1) end
         logDirty = true
     end
 
     local function refreshLogUI()
         if not logScroll or not logLabel then return end
-        logLabel.Text = (#logs == 0) and "(belum ada log)" or table.concat(logs, "\n")
+        if #logs == 0 then
+            logLabel.Text = "(belum ada log)"
+        else
+            local start = 1
+            local hidden = #logs - LOG_CAP.ui
+            if hidden > 0 then start = hidden + 1 end
+            local view = {}
+            if hidden > 0 then
+                view[1] = "... " .. hidden .. " baris sebelumnya disembunyikan (Copy All untuk semua) ..."
+            end
+            for i = start, #logs do view[#view + 1] = logs[i] end
+            logLabel.Text = table.concat(view, "\n")
+        end
         if autoScroll then
             task.defer(function()
                 if logScroll and logScroll.Parent then
@@ -3514,7 +3528,7 @@ local function boot()
         autoScroll = v
         if v then refreshLogUI() end
     end)
-    pgLog:note("Log dibatasi 250 baris terakhir supaya ringan di HP. Copy All untuk menyimpan ke clipboard.")
+    pgLog:note("Disimpan 4000 baris (maks 3000 karakter/baris). Tampilan hanya 300 baris terakhir supaya ringan; Copy All mengambil semua.")
 
     --[[ ===================== 20. INFO PAGE ===================== ]]
     local executorName = "?"
