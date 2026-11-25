@@ -8,22 +8,26 @@ local REPO = "roblox"
 local BRANCH = "main"
 local URL = "https://raw.githubusercontent.com/" .. USER .. "/" .. REPO .. "/" .. BRANCH .. "/dist/BikeForEggsMobile_v5_2.lua"
 
-local src
-local ok = pcall(function()
-    if game.HttpGet then
-        src = game:HttpGet(URL, true)
-    else
-        src = game:GetService("HttpService"):GetAsync(URL, true)
-    end
-end)
+-- Backup: gist publik dengan isi yang sama (dipakai kalau raw repo belum terpropagasi).
+local FALLBACK = "https://gist.githubusercontent.com/danu-dev/5919ac4fe9d4291c2aee8bfdfe0b06a1/raw/7e9c83746ebb8f2bcada1fa78817dd7e769bc23f/BikeForEggsMobile_v5_2.lua"
 
-if not ok or type(src) ~= "string" or src == "" then
-    warn("[BikeForEggs] Gagal memuat dari GitHub. Paste isi dist/BikeForEggsMobile_v5_2.lua ke LocalScript instead.")
-    return
+local function fetch(url)
+    local body
+    local ok = pcall(function()
+        if game.HttpGet then
+            body = game:HttpGet(url, true)
+        else
+            body = game:GetService("HttpService"):GetAsync(url, true)
+        end
+    end)
+    if not ok or type(body) ~= "string" or body == "" then return nil end
+    if body:find("404: Not Found", 1, true) or body:find("<title>404", 1, true) then return nil end
+    return body
 end
 
-if src:find("404: Not Found", 1, true) or src:find("<title>404", 1, true) then
-    warn("[BikeForEggs] Raw URL 404. Kemungkinan repo masih PRIVATE / salah branch. Buka repo > Settings > General > Change visibility > Public. Atau paste dist/BikeForEggsMobile_v5_2.lua langsung.")
+local src = fetch(URL) or fetch(FALLBACK)
+if not src then
+    warn("[BikeForEggs] Raw repo DAN gist keduanya 404 / gagal. Cek verifikasi email GitHub akun danu-dev, atau paste isi dist/BikeForEggsMobile_v5_2.lua langsung ke LocalScript.")
     return
 end
 
