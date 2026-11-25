@@ -1,10 +1,26 @@
     --[[ ===================== 12b. DEBUG DATA (SEMUA AREA) ===================== ]]
     local function debugCategoryOf(e, i)
-        if e and e.uid and uidCategory[e.uid] then return uidCategory[e.uid] end
+        if not e then return nil end
+        local m = e.m
+        if m then
+            -- PetDisplayName adalah kategori asli (Embercrest, Grizzlite, ...).
+            -- Prioritaskan ini, jangan kalah oleh fallback name "Egg".
+            local pet = m:GetAttribute("PetDisplayName")
+            if type(pet) == "string" and pet ~= "" and pet ~= "Egg" then return string.lower(pet) end
+            local disp = m:GetAttribute("DisplayName")
+            if type(disp) == "string" and disp ~= "" then
+                local clean = disp:gsub("%s*[Ee]gg%s*$", "")
+                clean = clean:gsub("^%s+", ""):gsub("%s+$", "")
+                if clean ~= "" and clean ~= "Egg" then return string.lower(clean) end
+            end
+            local model = m:GetAttribute("PetModelName")
+            if type(model) == "string" and model ~= "" then return string.lower(model) end
+        end
+        if e.uid and uidCategory[e.uid] then return uidCategory[e.uid] end
         local n = i and i.name
-        if n and n ~= "" and not n:find("Egg #", 1, true) then return string.lower(n) end
-        local attr = e and e.m and e.m:GetAttribute("PetDisplayName")
-        if type(attr) == "string" and attr ~= "" then return string.lower(attr) end
+        if n and n ~= "" and not n:find("Egg #", 1, true) and n ~= "Egg" and n ~= "egg" then
+            return string.lower(n)
+        end
         return nil
     end
 
@@ -30,7 +46,7 @@
             if cat and uid then uidCategory[uid] = cat end
             local ai = eggAreaIndex(e)
             local areaName = (AREAS[ai] and AREAS[ai][1]) or AREAS[state.area][1]
-            if probeRecord(uid, cat, areaName, verbose) then found = found + 1 end
+            if probeRecord(uid, cat, areaName, verbose, e.m and e.m.Name or nil) then found = found + 1 end
             checked = checked + 1
             if checked >= limit then break end
         end

@@ -1,5 +1,11 @@
 # TODO / handoff cepat
 
+## v5.6 — perbaikan dari log user
+- `attempt to call a nil value` di mode Best: `applyCategoryMeta()` (file 40) memanggil `rarityOf()` yang dulu didefinisikan di file 41. Di Luau, local yang dibuat belakangan tidak terlihat dari fungsi sebelumnya, jadi jadi global nil. `rarityOf()` sekarang pindah ke `32_helpers.lua` (sebelum snapshot).
+- `RequestEggRecord` sebelumnya dikirimi guid saja; server butuh Uid penuh `AreaEgg_<guid>`. Probe sekarang mencoba `m.Name`, `"AreaEgg_"..uid`, dan guid, dengan/tanpa area.
+- `debugCategoryOf()` sekarang mengutamakan `PetDisplayName`, lalu `DisplayName` (buang suffix "Egg"), lalu `PetModelName`, bukan fallback `Egg`/`bear`.
+- Probe mencatat balasan apa pun (termasuk table kosong) dan log `RECORD` menampilkan argumen yang dipakai.
+
 ## v5.5 — optimasi first entry
 - `scanPrompts()` sekarang mengisi hatch, sell, **dan** `SmartPromptPart` dalam satu `workspace:GetDescendants()` (dulu dua scan terpisah tiap 2 detik).
 - `areaEggs()` memakai cache model + invalidiasi `DescendantAdded/Removing` dan TTL 1,5 detik, bukan menyusuri `AreaEggSlotsClient` tiap dipanggil.

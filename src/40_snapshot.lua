@@ -184,9 +184,9 @@
     end
 
     -- Probe RequestEggRecord untuk satu egg/kategori. Di-cache supaya tidak spam server.
-    local function probeRecord(uid, cat, areaName, verbose)
-        if not uid and not cat then return nil end
-        local key = cat and string.lower(cat) or ("uid:" .. tostring(uid))
+    local function probeRecord(uid, cat, areaName, verbose, fullUid)
+        if not uid and not cat and not fullUid then return nil end
+        local key = cat and ("cat:" .. string.lower(cat)) or ("uid:" .. tostring(fullUid or uid))
         if probeDone[key] and not verbose then return nil end
         probeDone[key] = true
 
@@ -196,11 +196,19 @@
             return nil
         end
 
-        local attempts = {}
+        -- Server memakai Uid penuh "AreaEgg_<guid>", bukan guid saja.
+        local ids = {}
+        if fullUid then ids[#ids + 1] = fullUid end
         if uid then
-            attempts[#attempts + 1] = { uid }
-            if areaName then attempts[#attempts + 1] = { areaName, uid } end
-            attempts[#attempts + 1] = { state.area, uid }
+            ids[#ids + 1] = "AreaEgg_" .. uid
+            ids[#ids + 1] = uid
+        end
+
+        local attempts = {}
+        for _, id in ipairs(ids) do
+            attempts[#attempts + 1] = { id }
+            if areaName then attempts[#attempts + 1] = { areaName, id } end
+            attempts[#attempts + 1] = { state.area, id }
         end
         if cat then
             attempts[#attempts + 1] = { cat }
@@ -214,12 +222,12 @@
             if not seen[sig] then
                 seen[sig] = true
                 local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
-                if ok and res then
-                    indexSnapshot(res, 0)
+                if ok and res ~= nil then
+                    if type(res) == "table" then indexSnapshot(res, 0) end
                     local gotCat = cat or (type(res) == "table" and (res.AssetCategory or res.DisplayName or res.Category))
                     applyCategoryMeta(gotCat, res)
                     if verbose then log("RECORD " .. sig .. ": " .. ser(res):sub(1, 700)) end
-                    return res
+                    if type(res) == "table" and next(res) ~= nil then return res end
                 end
             end
         end

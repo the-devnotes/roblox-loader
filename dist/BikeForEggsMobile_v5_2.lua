@@ -1178,6 +1178,27 @@ local function boot()
         oc = 1e27, no = 1e30, dc = 1e33,
     }
 
+    -- Parsing rarity HANYA dari field yang jelas (Rarity, Tier, claim feedback, dll).
+    -- "Cosmic" di nama area tidak boleh masuk lewat jalur ini.
+    -- Taruh di helper (sebelum snapshot) supaya applyCategoryMeta bisa memanggilnya.
+    local function rarityOf(value)
+        if type(value) == "number" then
+            if value >= 1 and value <= #RARITY then return math.floor(value) end
+            return 0
+        end
+        if type(value) ~= "string" then return 0 end
+        local s = value:lower():gsub("[%s_%-]+", "")
+        if s == "" then return 0 end
+        local best = 0
+        for word, idx in pairs(RARITY_ALIAS) do
+            local w = word:gsub("[%s_%-]+", "")
+            if s == w then
+                if idx > best then best = idx end
+            end
+        end
+        return best
+    end
+
     local function parseValue(s)
         if type(s) == "number" then return s end
         s = tostring(s):lower():gsub(",", ""):gsub("%s+", "")
@@ -1410,9 +1431,9 @@ local function boot()
     end
 
     -- Probe RequestEggRecord untuk satu egg/kategori. Di-cache supaya tidak spam server.
-    local function probeRecord(uid, cat, areaName, verbose)
-        if not uid and not cat then return nil end
-        local key = cat and string.lower(cat) or ("uid:" .. tostring(uid))
+    local function probeRecord(uid, cat, areaName, verbose, fullUid)
+        if not uid and not cat and not fullUid then return nil end
+        local key = cat and ("cat:" .. string.lower(cat)) or ("uid:" .. tostring(fullUid or uid))
         if probeDone[key] and not verbose then return nil end
         probeDone[key] = true
 
@@ -1422,11 +1443,19 @@ local function boot()
             return nil
         end
 
-        local attempts = {}
+        -- Server memakai Uid penuh "AreaEgg_<guid>", bukan guid saja.
+        local ids = {}
+        if fullUid then ids[#ids + 1] = fullUid end
         if uid then
-            attempts[#attempts + 1] = { uid }
-            if areaName then attempts[#attempts + 1] = { areaName, uid } end
-            attempts[#attempts + 1] = { state.area, uid }
+            ids[#ids + 1] = "AreaEgg_" .. uid
+            ids[#ids + 1] = uid
+        end
+
+        local attempts = {}
+        for _, id in ipairs(ids) do
+            attempts[#attempts + 1] = { id }
+            if areaName then attempts[#attempts + 1] = { areaName, id } end
+            attempts[#attempts + 1] = { state.area, id }
         end
         if cat then
             attempts[#attempts + 1] = { cat }
@@ -1440,12 +1469,12 @@ local function boot()
             if not seen[sig] then
                 seen[sig] = true
                 local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
-                if ok and res then
-                    indexSnapshot(res, 0)
+                if ok and res ~= nil then
+                    if type(res) == "table" then indexSnapshot(res, 0) end
                     local gotCat = cat or (type(res) == "table" and (res.AssetCategory or res.DisplayName or res.Category))
                     applyCategoryMeta(gotCat, res)
                     if verbose then log("RECORD " .. sig .. ": " .. ser(res):sub(1, 700)) end
-                    return res
+                    if type(res) == "table" and next(res) ~= nil then return res end
                 end
             end
         end
@@ -1477,26 +1506,6 @@ local function boot()
         local id = s:match("rbxassetid://(%d+)") or s:match("rbxthumb://[^%d]*(%d+)")
         if not id and s:match("^%d%d%d%d%d+$") then id = s end
         return id
-    end
-
-    -- Parsing rarity HANYA dari field yang jelas (Rarity, Tier, claim feedback, dll).
-    -- "Cosmic" di nama area tidak boleh masuk lewat jalur ini.
-    local function rarityOf(value)
-        if type(value) == "number" then
-            if value >= 1 and value <= #RARITY then return math.floor(value) end
-            return 0
-        end
-        if type(value) ~= "string" then return 0 end
-        local s = value:lower():gsub("[%s_%-]+", "")
-        if s == "" then return 0 end
-        local best = 0
-        for word, idx in pairs(RARITY_ALIAS) do
-            local w = word:gsub("[%s_%-]+", "")
-            if s == w then
-                if idx > best then best = idx end
-            end
-        end
-        return best
     end
 
     local function scanKV(info, key, value)
@@ -2421,11 +2430,27 @@ local function boot()
 
     --[[ ===================== 12b. DEBUG DATA (SEMUA AREA) ===================== ]]
     local function debugCategoryOf(e, i)
-        if e and e.uid and uidCategory[e.uid] then return uidCategory[e.uid] end
+        if not e then return nil end
+        local m = e.m
+        if m then
+            -- PetDisplayName adalah kategori asli (Embercrest, Grizzlite, ...).
+            -- Prioritaskan ini, jangan kalah oleh fallback name "Egg".
+            local pet = m:GetAttribute("PetDisplayName")
+            if type(pet) == "string" and pet ~= "" and pet ~= "Egg" then return string.lower(pet) end
+            local disp = m:GetAttribute("DisplayName")
+            if type(disp) == "string" and disp ~= "" then
+                local clean = disp:gsub("%s*[Ee]gg%s*$", "")
+                clean = clean:gsub("^%s+", ""):gsub("%s+$", "")
+                if clean ~= "" and clean ~= "Egg" then return string.lower(clean) end
+            end
+            local model = m:GetAttribute("PetModelName")
+            if type(model) == "string" and model ~= "" then return string.lower(model) end
+        end
+        if e.uid and uidCategory[e.uid] then return uidCategory[e.uid] end
         local n = i and i.name
-        if n and n ~= "" and not n:find("Egg #", 1, true) then return string.lower(n) end
-        local attr = e and e.m and e.m:GetAttribute("PetDisplayName")
-        if type(attr) == "string" and attr ~= "" then return string.lower(attr) end
+        if n and n ~= "" and not n:find("Egg #", 1, true) and n ~= "Egg" and n ~= "egg" then
+            return string.lower(n)
+        end
         return nil
     end
 
@@ -2451,7 +2476,7 @@ local function boot()
             if cat and uid then uidCategory[uid] = cat end
             local ai = eggAreaIndex(e)
             local areaName = (AREAS[ai] and AREAS[ai][1]) or AREAS[state.area][1]
-            if probeRecord(uid, cat, areaName, verbose) then found = found + 1 end
+            if probeRecord(uid, cat, areaName, verbose, e.m and e.m.Name or nil) then found = found + 1 end
             checked = checked + 1
             if checked >= limit then break end
         end
@@ -3127,7 +3152,7 @@ local function boot()
     local pgInfo = ui:page("info", "Info", "ℹ️")
     pgInfo:section("Tentang")
     pgInfo:card({
-        {"Versi", "v5.5"},
+        {"Versi", "v5.6"},
         {"UI", "BFEUI (embedded)"},
         {"Player", lp.Name},
         {"Executor", executorName},

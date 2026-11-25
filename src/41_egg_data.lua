@@ -13,26 +13,6 @@
         return id
     end
 
-    -- Parsing rarity HANYA dari field yang jelas (Rarity, Tier, claim feedback, dll).
-    -- "Cosmic" di nama area tidak boleh masuk lewat jalur ini.
-    local function rarityOf(value)
-        if type(value) == "number" then
-            if value >= 1 and value <= #RARITY then return math.floor(value) end
-            return 0
-        end
-        if type(value) ~= "string" then return 0 end
-        local s = value:lower():gsub("[%s_%-]+", "")
-        if s == "" then return 0 end
-        local best = 0
-        for word, idx in pairs(RARITY_ALIAS) do
-            local w = word:gsub("[%s_%-]+", "")
-            if s == w then
-                if idx > best then best = idx end
-            end
-        end
-        return best
-    end
-
     local function scanKV(info, key, value)
         local kk = tostring(key):lower():gsub("[%s_%-]", "")
         if kk == "displayname" or kk == "name" or kk == "eggname"

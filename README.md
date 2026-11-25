@@ -70,4 +70,5 @@ sh build.sh
 - Kartu egg tidak lagi memakai `?` kalau rarity belum ada; memakai `-`.
 - Tombol debug: **Probe Record (semua area)**, **Dump Semua Egg**, **Dump 1 Egg**, dan toggle **Auto Probe Record**.
 - v5.5 (optimasi masuk game): satu `workspace:GetDescendants()` untuk hatch/sell + smart prompt, cache model egg, kartu galeri dibuat hanya saat halaman Egg dibuka, probe debug ditunda 5 detik, dan toggle **Mode Ringan (4 kartu)** di halaman Info.
+- v5.6: error `attempt to call a nil value` di mode Best diperbaiki (`rarityOf` dipindah lebih awal). Probe `RequestEggRecord` sekarang pakai Uid penuh `AreaEgg_<guid>` dan kategori dari `PetDisplayName`.
 - Lihat `TODO.md` kalau sebagian rarity/value/weight tetap kosong.
