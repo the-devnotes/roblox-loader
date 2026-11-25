@@ -4,7 +4,7 @@
 set -eu
 
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-OUT="$ROOT/dist/BikeForEggsMobile.lua"
+OUT="$ROOT/dist/BikeForEggsMobile_v5_2.lua"
 
 mkdir -p "$(dirname "$OUT")"
 : > "$OUT"

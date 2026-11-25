@@ -5,7 +5,7 @@ Folder ini siap dipush ke GitHub. Script asli di `../Lainnya/BikeForEggsMobile_v
 ## Cara pakai di Roblox
 
 ### Opsi A — paling aman (disarankan)
-1. Buka `dist/BikeForEggsMobile.lua`.
+1. Buka `dist/BikeForEggsMobile_v5_2.lua`.
 2. Copy seluruh isinya.
 3. Paste ke satu `LocalScript` (misal di `StarterPlayerScripts`).
 4. Jalankan. Script ini **standalone**: BFEUI sudah ditanam, tidak butuh `HttpGet` / module luar.
@@ -23,7 +23,7 @@ Penting: `raw.githubusercontent.com` **hanya bisa diakses kalau repo PUBLIC**. K
 BikeForEggs/
 ├── build.sh              # regenerate dist dari src
 ├── dist/
-│   └── BikeForEggsMobile.lua   # HASIL GABUNGAN — yang dipaste ke Roblox
+│   └── BikeForEggsMobile_v5_2.lua   # HASIL GABUNGAN — yang dipaste ke Roblox
 ├── src/                  # source bersih, dipisah per bagian
 │   ├── 00_header.lua             anti double-run + notice
 │   ├── 10_boot_start.lua         boot + services
@@ -59,7 +59,7 @@ cd /storage/emulated/0/Download/BikeForEggs
 sh build.sh
 ```
 
-`build.sh` juga menjalankan `luac -p` kalau tersedia. Hasil `dist/BikeForEggsMobile.lua` saat ini **byte-identik** dengan `BikeForEggsMobile_v5.lua` yang sudah dites mock.
+`build.sh` juga menjalankan `luac -p` kalau tersedia. Hasil `dist/BikeForEggsMobile_v5_2.lua` saat ini **byte-identik** dengan `BikeForEggsMobile_v5.lua` yang sudah dites mock.
 
 ## Status singkat
 
