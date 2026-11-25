@@ -1,5 +1,5 @@
 [build]
-  publish = "netlify"
+  publish = "public"
   command = "sh prepare-netlify.sh"
 
 [build.environment]

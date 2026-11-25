@@ -4,8 +4,8 @@
 
     Loader serbaguna: ganti daftar SOURCES untuk script apa pun.
     Tamp biru + hitam, ikon digambar pakai Frame (tanpa emoji).
-    File script disimpan ber-encode hex supaya tidak terbaca sebagai Lua di browser.
-    Loader otomatis mendekode lalu menjalankan dengan loadstring.
+    File script disimpan ber-encode hex di balik redirect gate Netlify.
+    Browser biasa di-redirect; Roblox dengan token mendapat hex, lalu loader menjalankannya.
 
     Kalau logo ClipperHub sudah di-upload ke Roblox, isi LOGO_ID dengan Asset ID-nya.
     Kalau dikosongkan, loader menggambar ikon telur biru sendiri.
@@ -15,11 +15,9 @@ local CREDIT = "By ClipperHub"
 local LOGO_ID = "" -- contoh: "123456789"
 local ENCODED = true -- true = file sumber berisi hex, false = Lua polos
 
--- Sumber dicoba berurutan. Tambah/hapus baris sesuai script yang dimuat.
+-- Sumber dicoba berurutan. Query k=wajib supaya redirect Netlify mengizinkan.
 local SOURCES = {
-    { label = "netlify.app", url = "https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.hex" },
-    -- { label = "raw.githubusercontent.com", url = "https://raw.githubusercontent.com/USER/REPO/main/dist/script.lua" },
-    -- { label = "gist.githubusercontent.com", url = "https://gist.githubusercontent.com/USER/ID/raw/script.lua" },
+    { label = "clipperhub", url = "https://bikeforeggs-loader.netlify.app/clipperhub.lua?k=ClipperHub-2026" },
 }
 
 local sources = {}

@@ -10,52 +10,66 @@ Folder ini siap dipush ke GitHub. Script asli di `../Lainnya/BikeForEggsMobile_v
 3. Paste ke satu `LocalScript` (misal di `StarterPlayerScripts`).
 4. Jalankan. Script ini **standalone**: BFEUI sudah ditanam, tidak butuh `HttpGet` / module luar.
 
-### Opsi B — Loader ClipperHub (universal)
-1. `loader.lua`: UI biru + hitam, ikon digambar (tanpa emoji), tanda `By ClipperHub`, **tanpa subjudul**.
-2. Paste `loader.lua` ke `LocalScript`. Loader langsung jalan otomatis, tanpa klik.
-3. Untuk script lain, edit tabel `SOURCES` di atas. Isi URL Netlify / GitHub raw / gist; sumber dicoba berurutan.
-4. Set `ENCODED = true` kalau sumber berisi hex. Set `false` kalau sumber Lua polos.
+### Opsi B — Loader ClipperHub
+1. Paste `loader.lua` ke satu `LocalScript`.
+2. Loader langsung jalan otomatis: UI biru + hitam, ikon digambar tanpa emoji, tanda `By ClipperHub`, tanpa subjudul.
+3. Loader mengambil payload hex dari Netlify, mendekode, lalu menjalankan dengan `loadstring`.
 
-#### Auto loader tanpa UI
-`loader-auto.lua` adalah versi satu baris ala:
+URL yang dipakai loader:
 
-```lua
-loadstring(game:HttpGet("URL"))()
+```
+https://bikeforeggs-loader.netlify.app/clipperhub.lua?k=ClipperHub-2026
 ```
 
-Isinya otomatis mengambil file `.hex`, mendekode, lalu menjalankan. Tidak ada kartu UI.
+Kalau URL itu dibuka di browser biasa (tanpa token), request di-redirect ke `/`. Hanya request dengan query `k` yang benar yang mendapat isi hex lewat rewrite `_redirects`. Tidak ada file `.lua` statis yang ikut dipublish, jadi source polos tidak bisa dibuka langsung.
 
-#### Site Netlify aktif
+Versi minimal tanpa UI, kalau mau satu baris:
+
+```lua
+loadstring((game:HttpGet("https://bikeforeggs-loader.netlify.app/clipperhub.lua?k=ClipperHub-2026"):gsub("%s+", ""):gsub("%x%x", function(h) return string.char(tonumber(h, 16)) end)))()
+```
+
+Catatan jujur: ini penyamaran + gate sederhana, bukan enkripsi. Token bisa dipalsukan dengan `curl` kalau nilainya diketahui. Tidak mungkin menyembunyikan kode sepenuhnya selama Roblox harus mengunduh source untuk `loadstring`.
+
+## Netlify
+
 - Project: `bikeforeggs-loader`
 - Team: `YE` (`danzsukargb`)
 - URL: https://bikeforeggs-loader.netlify.app
-- File Lua polos: https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua
-- File hex (dipakai loader): https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.hex
 - Project ID: `3c1e05d6-93c9-453a-857a-2d4f4c68702e`
+- `publish = "public"` — isinya `logo.jpg`, payload hex, dan `_redirects`
+- `public/_redirects` — aturan gate: token → payload, selain itu → `/`
 
-Kalau file `.hex` dibuka di browser, isinya tampak seperti deretan angka, bukan kode Lua. Roblox tetap bisa menjalankannya setelah didekode loader.
+Deploy ulang:
 
-Catatan jujur: ini **penyamaran**, bukan enkripsi. Siapa pun yang punya URL dan tahu caranya tetap bisa mendekode. Tidak mungkin menyembunyikan kode sepenuhnya selama Roblox harus mengunduh source-nya untuk `loadstring`.
-
-#### Deploy ulang pakai CLI
 ```sh
-sh prepare-netlify.sh
-netlify deploy --prod --dir=netlify --no-build
+sh deploy-netlify.sh
 ```
 
-`prepare-netlify.sh` otomatis membuat ulang file `.hex` dari `dist/`. `netlify init` sudah pernah dijalankan: skill Netlify terpasang di `.agents/skills` dan MCP server ditambahkan ke `opencode.jsonc`.
+Atau manual:
 
-Logo: upload `logo.jpg` ke Roblox lalu isi `LOGO_ID`. Kalau kosong, loader menggambar ikon telur biru.
+```sh
+sh prepare-netlify.sh
+netlify deploy --prod --dir=public --no-build
+```
 
-Kalau `loadstring` tidak tersedia di environment-mu, pakai Opsi A. Opsi A selalu paling aman karena tidak bergantung URL sama sekali.
+`prepare-netlify.sh` menjalankan `build.sh`, membuat payload hex, menulis `_redirects`, lalu menyiapkan folder `public/`. Token bisa diganti lewat env:
+
+```sh
+CLIPPERHUB_TOKEN=token-baru sh deploy-netlify.sh
+```
+
+Kalau token diganti, jangan lupa ganti juga query `k=` di `loader.lua`.
+
+Logo: upload `logo.jpg` ke Roblox lalu isi `LOGO_ID` di `loader.lua`. Kalau kosong, loader menggambar ikon telur biru.
 
 ## Strukturfolder
 
 ```
 BikeForEggs/
-├── build.sh              # regenerate dist dari src
+├── build.sh              # gabungkan src/ -> dist/ + luac -p
 ├── dist/
-│   └── BikeForEggsMobile_v5_2.lua   # HASIL GABUNGAN — yang dipaste ke Roblox
+│   └── BikeForEggsMobile_v5_2.lua   # HASIL GABUNGAN — dipaste ke Roblox
 ├── src/                  # source bersih, dipisah per bagian
 │   ├── 00_header.lua             anti double-run + notice
 │   ├── 10_boot_start.lua         boot + services
@@ -64,21 +78,24 @@ BikeForEggs/
 │   ├── 30_state.lua              state + konstanta area/rarity
 │   ├── 31_log.lua                log system
 │   ├── 32_helpers.lua            parse/format/guid/ser
-│   ├── 40_snapshot.lua           RequestAreaEggSnapshot + index
-│   ├── 41_egg_data.lua           eggInfo, score, filter, gallery data
+│   ├── 41_egg_data.lua           eggInfo, score, filter
 │   ├── 50_base_area.lua          base + setArea + pickBestArea
 │   ├── 51_prompts.lua            scan proximity prompt
-│   ├── 52_steal.lua              doSteal + konfirmasi CarryState
+│   ├── 52_steal.lua              ambil egg + konfirmasi CarryState
 │   ├── 60_ui_boot.lua            init UI + sidebar
-│   ├── 61..67_page_*.lua         halaman Utama/Ambil/Tetas & Jual/Filter/Area/Log
+│   ├── 61..67_page_*.lua         Utama/Ambil/Tetas & Jual/Filter/Area/Log
 │   ├── 70_dashboard.lua          update dashboard
 │   ├── 71_loops.lua              loop ambil/tetas/jual/event
 │   └── 99_start.lua              start + error notice
-├── loader.lua            loader UI ClipperHub (hex + auto loadstring)
-├── loader-auto.lua       auto loader satu baris, tanpa UI
-├── netlify/              folder publish (script + hex + logo + status)
-│   └── BikeForEggsMobile_v5_2.hex  source tersamar untuk loader
-├── TODO.md               catatan lanjutan / bug yang belum selesai
+├── loader.lua            loader UI ClipperHub (auto + hex)
+├── netlify.toml          publish = public
+├── public/               folder publish statis (generated)
+│   ├── _redirects                  gate token + redirect browser
+│   ├── a3f9c2e1d7.txt              payload hex
+│   └── logo.jpg
+├── prepare-netlify.sh    build + payload + _redirects + copy aset
+├── deploy-netlify.sh     prepare + netlify deploy
+├── TODO.md               handoff ringkas
 └── docs/
     └── BFE_V5_HANDOFF.md  catatan teknis hasil investigasi API
 ```
@@ -96,16 +113,10 @@ sh build.sh
 
 `build.sh` juga menjalankan `luac -p` kalau tersedia. Hasil `dist/BikeForEggsMobile_v5_2.lua` saat ini **byte-identik** dengan `BikeForEggsMobile_v5.lua` yang sudah dites mock.
 
-## Status singkat
+## Fokus versi ringkas
 
-- Auto pilih area terbaik: sudah terbukti jalan di log user (`Forest -> Crystal Canyon`).
-- Steal + konfirmasi `AreaEggCarryState`: sudah terbukti jalan (`Grizzlite @ Crystal Canyon`).
-- v5.3: setelah prompt steal, karakter **langsung teleport ke base** dulu, baru menunggu konfirmasi — penjaga tidak sempat mengambil egg walaupun targetnya di paling belakang.
-- v5.4: debug data aktif untuk **semua area** — `RequestRuntimeSnapshot` + `RequestEggRecord` diprobe otomatis (terbatas) dan bisa dipicu manual dari halaman Egg.
-- Kartu egg tidak lagi memakai `?` kalau rarity belum ada; memakai `-`.
-- Tombol debug: **Probe Record (semua area)**, **Dump Semua Egg**, **Dump 1 Egg**, dan toggle **Auto Probe Record**.
-- v5.5 (optimasi masuk game): satu `workspace:GetDescendants()` untuk hatch/sell + smart prompt, cache model egg, kartu galeri dibuat hanya saat halaman Egg dibuka, probe debug ditunda 5 detik, dan toggle **Mode Ringan (4 kartu)** di halaman Info.
-- v5.6: error `attempt to call a nil value` di mode Best diperbaiki (`rarityOf` dipindah lebih awal). Probe `RequestEggRecord` sekarang pakai Uid penuh `AreaEgg_<guid>` dan kategori dari `PetDisplayName`.
-- v5.7: kategori generik `egg` tidak dipakai lagi; probe UID-first, log argumen/raw response (`RECORD coba`, `SNAPSHOT RAW`) supaya format remote bisa dilacak tanpa klik manual.
-- v5.8: snapshot `ActiveAssets` + hook `StealTargetEvent` sebagai sumber data cadangan; fallback progression untuk egg bertema (penguin … cerberus).
-- Lihat `TODO.md` kalau sebagian rarity/value/weight tetap kosong.
+- Ambil egg otomatis + pilih rarity minimum.
+- Halaman: Utama, Ambil, Tetas & Jual, Filter, Area, Log.
+- `fallback = true`, `strict = false`: egg tanpa data tetap bisa diambil.
+- Log: 4000 baris, tampil 300 baris terakhir.
+- Anti-double-run: `"Script sudah berjalan!"`.
