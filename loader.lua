@@ -3,8 +3,8 @@
     Ganti USER/REPO/BRANCH sebelum dipakai.
     Kalau loader gagal, copy isi dist/BikeForEggsMobile.lua langsung ke LocalScript.
 ]]
-local USER = "USER"
-local REPO = "REPO"
+local USER = "danu-dev"
+local REPO = "roblox"
 local BRANCH = "main"
 local URL = "https://raw.githubusercontent.com/" .. USER .. "/" .. REPO .. "/" .. BRANCH .. "/dist/BikeForEggsMobile.lua"
 
