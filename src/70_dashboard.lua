@@ -3,12 +3,12 @@
         if not homeStatus then return end
         if ui.current ~= "home" then return end
         if state.steal then
-            homeStatus.set("Steal", state.best and "ON - Best" or "ON - Rotasi", C.green)
+            homeStatus.set("Ambil", state.best and "Aktif - Terbaik" or "Aktif - Bergiliran", C.green)
         else
-            homeStatus.set("Steal", "OFF", C.sub)
+            homeStatus.set("Ambil", "Mati", C.sub)
         end
-        homeStatus.set("Hatch", state.hatch and "ON" or "OFF", state.hatch and C.green or C.sub)
-        homeStatus.set("Sell", state.sell and "ON" or "OFF", state.sell and C.green or C.sub)
+        homeStatus.set("Tetas", state.hatch and "Aktif" or "Mati", state.hatch and C.green or C.sub)
+        homeStatus.set("Jual", state.sell and "Aktif" or "Mati", state.sell and C.green or C.sub)
         homeStatus.set("Area", AREAS[state.area][1] .. (state.allAreas and " (semua)" or ""), C.text)
 
         local b, src = basePos()

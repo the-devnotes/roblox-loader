@@ -22,7 +22,7 @@
             if state.steal and not busy then
                 busy = true
                 local ok, err = pcall(stealOne, false)
-                if not ok then log("ERROR stealOne: " .. tostring(err)) end
+                if not ok then log("ERROR ambil egg: " .. tostring(err)) end
                 busy = false
                 task.wait(math.max(0.2, state.stealDelay))
             end

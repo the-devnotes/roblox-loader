@@ -1,5 +1,23 @@
 # TODO / handoff cepat
 
+## v6.1 — penamaan UI
+Permintaan user: jangan terdengar "AI banget"/jargon ganda; pakai deskripsi yang sesuai fitur.
+
+Perubahan label:
+- `Auto Steal Egg` → `Ambil Egg Otomatis`
+- `Pilih Egg Terbaik (Best Egg)` / `Aktifkan Best Egg` → `Ambil Egg Terbaik`
+- `Mode ambil: Bergiliran / Terbaik (Best)` → `Cara ambil: Bergiliran / Terbaik`
+- `Min Rarity/Progression/Value` → `Rarity/Progres/Nilai Minimum`
+- `Fallback kalau filter kosong` → `Ambil Semua kalau Filter Kosong`
+- `Filter ketat (data kosong = tolak)` → `Tolak Egg tanpa Data`
+- `Auto pilih area terbaik` → `Cari Area Terbaik Otomatis`
+- `Auto Hatch` / `Auto Sell Pets` → `Tetaskan Egg Otomatis` / `Jual Pet Otomatis`
+- `TP Area/Base`, `Set Base (di sini)`, `Copy All`, `Clear` → `Ke Area`, `Ke Base`, `Jadikan Base di Sini`, `Salin Semua`, `Hapus`
+- Halaman `Steal` → `Ambil`, `Auto` → `Tetas & Jual`; `SORTS[1]` `Auto (terbaik)` → `Rekomendasi`
+- Catatan dan log user-facing ditulis ulang tanpa "fallback/strict/scope/Best Egg".
+
+Internal state (`state.best`, `state.fallback`, `state.strict`, `stealOne`, dll.) sengaja tidak diganti supaya tidak merusak logika.
+
 ## v6.0 — versi ringkas (steal + rarity)
 Permintaan user: "pakek yang bisa aja kayak steal, pilih rarity, udh itu aja dulu" + konfirmasi "semua kecuali steal + rarity dihapus".
 

@@ -29,52 +29,52 @@
             end
             local best = pickBest(eggs, true)
             if best then
-                ui:toast("Best: " .. tostring(best.info.name))
+                ui:toast("Terbaik: " .. tostring(best.info.name))
             else
-                ui:toast("Tidak ada kandidat. Cek filter / fallback.", "warn")
+                ui:toast("Tidak ada yang cocok. Turunkan batas atau nyalakan 'Ambil Semua kalau Filter Kosong'.", "warn")
             end
         end)
     end
 
     local pgFilter = ui:page("filter", "Filter", "🎯")
-    pgFilter:section("Best Egg")
-    local filterBest = pgFilter:toggle("Aktifkan Best Egg", state.best, function(v) setFlag("best", v) end)
+    pgFilter:section("Pilihan Egg")
+    local filterBest = pgFilter:toggle("Ambil Egg Terbaik", state.best, function(v) setFlag("best", v) end)
     bind("best", filterBest)
 
     pgFilter:dropdown("Urutkan", SORTS, state.sort, function(_, idx)
         state.sort = idx
-        log("Urut: " .. SORTS[idx])
+        log("Urutan: " .. SORTS[idx])
         if updateHome then updateHome() end
     end)
-    local areaDropFilter = pgFilter:dropdown("Area target", AREA_NAMES, state.area, function(_, idx) setArea(idx, false, true) end)
+    local areaDropFilter = pgFilter:dropdown("Area tujuan", AREA_NAMES, state.area, function(_, idx) setArea(idx, false, true) end)
     areaRefs[#areaRefs + 1] = areaDropFilter
-    pgFilter:button("Pilih Area Terbaik", function() pcall(pickBestArea, false) end)
-    pgFilter:dropdown("Min Rarity", RARITY_NAMES, state.minRar, function(_, idx)
+    pgFilter:button("Cari Area Terbaik", function() pcall(pickBestArea, false) end)
+    pgFilter:dropdown("Rarity Minimum", RARITY_NAMES, state.minRar, function(_, idx)
         state.minRar = idx
-        log("Min Rarity: " .. RARITY_NAMES[idx])
+        log("Rarity minimum: " .. RARITY_NAMES[idx])
         if updateHome then updateHome() end
     end)
-    pgFilter:dropdown("Min Progression", PROG_NAMES, state.minProg, function(_, idx)
+    pgFilter:dropdown("Progres Minimum", PROG_NAMES, state.minProg, function(_, idx)
         state.minProg = idx
-        log("Min Progression: " .. PROG_NAMES[idx])
+        log("Progres minimum: " .. PROG_NAMES[idx])
         if updateHome then updateHome() end
     end)
-    pgFilter:dropdown("Min Value", VALUE_NAMES, state.minVal, function(_, idx)
+    pgFilter:dropdown("Nilai Minimum", VALUE_NAMES, state.minVal, function(_, idx)
         state.minVal = idx
-        log("Min Value: " .. VALUE_NAMES[idx])
+        log("Nilai minimum: " .. VALUE_NAMES[idx])
         if updateHome then updateHome() end
     end)
 
-    local filterAll = pgFilter:toggle("Semua Area", state.allAreas, function(v) setFlag("allAreas", v) end)
+    local filterAll = pgFilter:toggle("Cari di Semua Area", state.allAreas, function(v) setFlag("allAreas", v) end)
     bind("allAreas", filterAll)
-    local filterFallback = pgFilter:toggle("Fallback kalau filter kosong", state.fallback, function(v) setFlag("fallback", v) end)
+    local filterFallback = pgFilter:toggle("Ambil Semua kalau Filter Kosong", state.fallback, function(v) setFlag("fallback", v) end)
     bind("fallback", filterFallback)
-    local filterStrict = pgFilter:toggle("Filter ketat (data kosong = tolak)", state.strict, function(v) setFlag("strict", v) end)
+    local filterStrict = pgFilter:toggle("Tolak Egg tanpa Data", state.strict, function(v) setFlag("strict", v) end)
     bind("strict", filterStrict)
 
-    pgFilter:button("Tes Pilih Terbaik Sekarang", testFilter, { variant = "primary" })
+    pgFilter:button("Cek Egg Terbaik", testFilter, { variant = "primary" })
 
-    pgFilter:note("Filter aman: kalau game tidak memberi data rarity/value untuk suatu egg, egg itu TIDAK otomatis ditolak. Pakai Min Progression untuk filter yang paling andal. Filter ketat hanya untuk debugging.")
-    pgFilter:note("Urutan Auto: egg event/night dulu, lalu Rarity, Progression, Chance, Value, Berat. Kalau rarity tidak terbaca, Progression yang menentukan.")
-    pgFilter:note("Dropdown Area target mengunci scope ke area itu (Semua Area otomatis OFF). Tombol 'Pilih Area Terbaik' mencari area dengan egg skor tertinggi.")
+    pgFilter:note("Kalau rarity/value suatu egg belum terbaca, egg itu tetap bisa diambil. Progres Minimum paling bisa diandalkan. 'Tolak Egg tanpa Data' hanya untuk mencoba filter ketat.")
+    pgFilter:note("Urutan rekomendasi: egg event/night dulu, lalu rarity, progres, peluang, nilai, berat. Kalau rarity kosong, progres yang menentukan.")
+    pgFilter:note("Area tujuan membatasi pencarian ke area itu (Cari di Semua Area otomatis mati). Tombol 'Cari Area Terbaik' memilih area yang egg-nya paling bagus.")
 

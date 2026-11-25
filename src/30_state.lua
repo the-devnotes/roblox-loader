@@ -15,7 +15,7 @@
     local AREA_NAMES = {}
     for i, a in ipairs(AREAS) do AREA_NAMES[i] = a[1] end
 
-    local SORTS = {"Auto (terbaik)", "Rarity", "Value", "Progression", "Terdekat", "Berat (kg)"}
+    local SORTS = {"Rekomendasi", "Rarity", "Nilai", "Progres", "Terdekat", "Berat (kg)"}
     local RARITY = {"common", "uncommon", "rare", "epic", "legendary", "mythic", "secret", "divine", "celestial", "godly", "transcendent", "cosmic", "eternal"}
     local RARITY_LABEL = {"Basic", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Divine", "Exclusive", "Exotic", "Superior", "Cosmic", "Eternal"}
     local RARITY_NAMES = {"Semua", "Uncommon+", "Rare+", "Epic+", "Legendary+", "Mythic+", "Secret+", "Divine+", "Exclusive+", "Exotic+", "Superior+", "Cosmic+", "Eternal+"}

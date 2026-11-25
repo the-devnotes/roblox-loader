@@ -474,7 +474,7 @@
                 log("Data " .. AREAS[state.area][1] .. " belum terbaca (" .. #eggs .. " egg). Ambil 1 egg dulu supaya Claim Feedback/CarryState mengisi nama + rarity.")
             elseif #miss > 0 then
                 lastDataWarn = os.clock()
-                log("Data " .. table.concat(miss, "/") .. " tidak tersedia -> filter itu diabaikan. Pakai Min Progression.")
+                log("Data " .. table.concat(miss, "/") .. " tidak tersedia -> filter itu diabaikan. Pakai Progres Minimum.")
             end
         end
 
@@ -486,12 +486,12 @@
                 if not silent and os.clock() - lastFallbackLog > 8 then
                     lastFallbackLog = os.clock()
                     local reason = state.strict and "Filter ketat menolak semua" or "Filter tidak menemukan kandidat"
-                    log(reason .. " -> fallback ke semua egg.")
+                    log(reason .. " -> mengambil semua egg.")
                 end
             else
                 if not silent and os.clock() - lastFilterLog > 8 then
                     lastFilterLog = os.clock()
-                    log("Best Egg: tidak ada yang lolos filter. Turunkan Min / aktifkan Fallback.")
+                    log("Tidak ada yang lolos filter. Turunkan batas atau nyalakan 'Ambil Semua kalau Filter Kosong'.")
                 end
                 return nil, #filtered
             end

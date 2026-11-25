@@ -8,7 +8,7 @@
     - Tombol minimize (-) dan close (X).
     - Anti double-run: kalau script masih jalan, muncul peringatan
       "Script sudah berjalan!".
-    - Versi ringkas: fokus Auto Steal + pilih Min Rarity.
+    - Versi ringkas: ambil egg otomatis + pilih rarity minimum.
     - Filter aman: kalau rarity belum terbaca, egg tetap bisa diambil.
     - Tombol/eksperimen katalog, snapshot, dump egg, dan galeri dihapus.
 

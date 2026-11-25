@@ -29,9 +29,9 @@
         local b, src = basePos(true)
         if b then
             teleport(b)
-            log("TP ke base (" .. tostring(src) .. ").")
+            log("Ke base (" .. tostring(src) .. ").")
         else
-            ui:toast("Base belum diketahui. Tekan Set Base dulu.", "warn")
+            ui:toast("Base belum diset. Tekan Jadikan Base di Sini dulu.", "warn")
         end
     end
 
@@ -43,7 +43,7 @@
         busy = true
         task.spawn(function()
             local ok, err = pcall(stealOne, true)
-            if not ok then log("ERROR manual steal: " .. tostring(err)) end
+            if not ok then log("ERROR ambil satu egg: " .. tostring(err)) end
             busy = false
         end)
     end

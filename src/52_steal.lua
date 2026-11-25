@@ -84,7 +84,7 @@
                 end
                 if os.clock() - lastPromptLog > 4 then
                     lastPromptLog = os.clock()
-                    log(string.format("Steal salah target: minta %s di %s, dapat %s di %s. Coba lagi.",
+                    log(string.format("Salah target: minta %s di %s, dapat %s di %s. Coba lagi.",
                         tostring(targetUid or i.name):sub(1, 12), targetArea,
                         tostring(lastCarry.uid or "?"):sub(1, 12), tostring(lastCarry.area or "?")))
                 end
@@ -99,12 +99,12 @@
         end
 
         if confirmed then
-            log("Prompt CarryAreaEgg berhasil: " .. tostring(i.name) .. " @ " .. targetArea .. ".")
+            log("Egg berhasil diambil: " .. tostring(i.name) .. " @ " .. targetArea .. ".")
         elseif anyPrompt then
             log("Prompt ditemukan tapi gagal mengambil " .. tostring(i.name) .. ".")
         elseif os.clock() - lastPromptLog > 6 then
             lastPromptLog = os.clock()
-            log("Prompt CarryAreaEgg tidak ditemukan (mungkin masih membawa egg).")
+            log("Prompt ambil tidak ditemukan (mungkin masih membawa egg).")
         end
 
         if b then
@@ -126,7 +126,7 @@
         if #eggs == 0 then
             if os.clock() - lastNoEggLog > 6 then
                 lastNoEggLog = os.clock()
-                log("Tidak ada egg di AreaEggSlotsClient untuk area " .. AREAS[state.area][1] .. ".")
+                log("Tidak ada egg di area " .. AREAS[state.area][1] .. ".")
             end
             return false
         end
@@ -136,7 +136,7 @@
             e = pickBest(eggs)
             if not e then return false end
             local i = e.info
-            log(string.format("[Best] %s | rar=%s prog=%s val=%s berat=%s chance=%s%s",
+            log(string.format("[Terbaik] %s | rar=%s prog=%s val=%s berat=%s chance=%s%s",
                 tostring(i.name), tostring(i.rar), tostring(i.prog), fmtVal(i.val),
                 fmtKg(i.weight),
                 i.chance > 0 and ("1/" .. fmtVal(i.chance)) or "-",
@@ -144,7 +144,7 @@
         else
             stealIdx = (stealIdx % #eggs) + 1
             e = eggs[stealIdx]
-            log(string.format("[Rotasi] egg %d/%d %s", stealIdx, #eggs, tostring(e.m.Name):sub(1, 24)))
+            log(string.format("[Bergiliran] egg %d/%d %s", stealIdx, #eggs, tostring(e.m.Name):sub(1, 24)))
         end
 
         return doSteal(e, manual)

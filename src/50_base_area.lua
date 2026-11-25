@@ -120,7 +120,7 @@
         end
         if best and best ~= state.area then
             setArea(best, true)
-            if not silent then log("Auto pilih area terbaik: " .. AREAS[best][1]) end
+            if not silent then log("Cari area terbaik: " .. AREAS[best][1]) end
         end
         return best
     end

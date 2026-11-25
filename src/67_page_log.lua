@@ -53,12 +53,12 @@
     end
 
     pgLog:buttonRow({
-        { text = "Copy All", callback = copyLog },
-        { text = "Clear", callback = clearLog, variant = "danger" },
+        { text = "Salin Semua", callback = copyLog },
+        { text = "Hapus", callback = clearLog, variant = "danger" },
     })
-    pgLog:toggle("Auto-scroll ke bawah", autoScroll, function(v)
+    pgLog:toggle("Ikuti Log Terbaru", autoScroll, function(v)
         autoScroll = v
         if v then refreshLogUI() end
     end)
-    pgLog:note("Disimpan 4000 baris (maks 3000 karakter/baris). Tampilan hanya 300 baris terakhir supaya ringan; Copy All mengambil semua.")
+    pgLog:note("Tersimpan 4000 baris. Tampilan hanya 300 baris terakhir supaya ringan. Tombol Salin Semua mengambil seluruh log.")
 

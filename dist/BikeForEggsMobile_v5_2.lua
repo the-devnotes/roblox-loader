@@ -8,7 +8,7 @@
     - Tombol minimize (-) dan close (X).
     - Anti double-run: kalau script masih jalan, muncul peringatan
       "Script sudah berjalan!".
-    - Versi ringkas: fokus Auto Steal + pilih Min Rarity.
+    - Versi ringkas: ambil egg otomatis + pilih rarity minimum.
     - Filter aman: kalau rarity belum terbaca, egg tetap bisa diambil.
     - Tombol/eksperimen katalog, snapshot, dump egg, dan galeri dihapus.
 
@@ -1028,7 +1028,7 @@ local function boot()
     local AREA_NAMES = {}
     for i, a in ipairs(AREAS) do AREA_NAMES[i] = a[1] end
 
-    local SORTS = {"Auto (terbaik)", "Rarity", "Value", "Progression", "Terdekat", "Berat (kg)"}
+    local SORTS = {"Rekomendasi", "Rarity", "Nilai", "Progres", "Terdekat", "Berat (kg)"}
     local RARITY = {"common", "uncommon", "rare", "epic", "legendary", "mythic", "secret", "divine", "celestial", "godly", "transcendent", "cosmic", "eternal"}
     local RARITY_LABEL = {"Basic", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Divine", "Exclusive", "Exotic", "Superior", "Cosmic", "Eternal"}
     local RARITY_NAMES = {"Semua", "Uncommon+", "Rare+", "Epic+", "Legendary+", "Mythic+", "Secret+", "Divine+", "Exclusive+", "Exotic+", "Superior+", "Cosmic+", "Eternal+"}
@@ -1125,7 +1125,7 @@ local function boot()
             if hidden > 0 then start = hidden + 1 end
             local view = {}
             if hidden > 0 then
-                view[1] = "... " .. hidden .. " baris sebelumnya disembunyikan (Copy All untuk semua) ..."
+                view[1] = "... " .. hidden .. " baris sebelumnya disembunyikan (Salin Semua untuk semua) ..."
             end
             for i = start, #logs do view[#view + 1] = logs[i] end
             logLabel.Text = table.concat(view, "\n")
@@ -1747,7 +1747,7 @@ local function boot()
                 log("Data " .. AREAS[state.area][1] .. " belum terbaca (" .. #eggs .. " egg). Ambil 1 egg dulu supaya Claim Feedback/CarryState mengisi nama + rarity.")
             elseif #miss > 0 then
                 lastDataWarn = os.clock()
-                log("Data " .. table.concat(miss, "/") .. " tidak tersedia -> filter itu diabaikan. Pakai Min Progression.")
+                log("Data " .. table.concat(miss, "/") .. " tidak tersedia -> filter itu diabaikan. Pakai Progres Minimum.")
             end
         end
 
@@ -1759,12 +1759,12 @@ local function boot()
                 if not silent and os.clock() - lastFallbackLog > 8 then
                     lastFallbackLog = os.clock()
                     local reason = state.strict and "Filter ketat menolak semua" or "Filter tidak menemukan kandidat"
-                    log(reason .. " -> fallback ke semua egg.")
+                    log(reason .. " -> mengambil semua egg.")
                 end
             else
                 if not silent and os.clock() - lastFilterLog > 8 then
                     lastFilterLog = os.clock()
-                    log("Best Egg: tidak ada yang lolos filter. Turunkan Min / aktifkan Fallback.")
+                    log("Tidak ada yang lolos filter. Turunkan batas atau nyalakan 'Ambil Semua kalau Filter Kosong'.")
                 end
                 return nil, #filtered
             end
@@ -1903,7 +1903,7 @@ local function boot()
         end
         if best and best ~= state.area then
             setArea(best, true)
-            if not silent then log("Auto pilih area terbaik: " .. AREAS[best][1]) end
+            if not silent then log("Cari area terbaik: " .. AREAS[best][1]) end
         end
         return best
     end
@@ -2094,7 +2094,7 @@ local function boot()
                 end
                 if os.clock() - lastPromptLog > 4 then
                     lastPromptLog = os.clock()
-                    log(string.format("Steal salah target: minta %s di %s, dapat %s di %s. Coba lagi.",
+                    log(string.format("Salah target: minta %s di %s, dapat %s di %s. Coba lagi.",
                         tostring(targetUid or i.name):sub(1, 12), targetArea,
                         tostring(lastCarry.uid or "?"):sub(1, 12), tostring(lastCarry.area or "?")))
                 end
@@ -2109,12 +2109,12 @@ local function boot()
         end
 
         if confirmed then
-            log("Prompt CarryAreaEgg berhasil: " .. tostring(i.name) .. " @ " .. targetArea .. ".")
+            log("Egg berhasil diambil: " .. tostring(i.name) .. " @ " .. targetArea .. ".")
         elseif anyPrompt then
             log("Prompt ditemukan tapi gagal mengambil " .. tostring(i.name) .. ".")
         elseif os.clock() - lastPromptLog > 6 then
             lastPromptLog = os.clock()
-            log("Prompt CarryAreaEgg tidak ditemukan (mungkin masih membawa egg).")
+            log("Prompt ambil tidak ditemukan (mungkin masih membawa egg).")
         end
 
         if b then
@@ -2136,7 +2136,7 @@ local function boot()
         if #eggs == 0 then
             if os.clock() - lastNoEggLog > 6 then
                 lastNoEggLog = os.clock()
-                log("Tidak ada egg di AreaEggSlotsClient untuk area " .. AREAS[state.area][1] .. ".")
+                log("Tidak ada egg di area " .. AREAS[state.area][1] .. ".")
             end
             return false
         end
@@ -2146,7 +2146,7 @@ local function boot()
             e = pickBest(eggs)
             if not e then return false end
             local i = e.info
-            log(string.format("[Best] %s | rar=%s prog=%s val=%s berat=%s chance=%s%s",
+            log(string.format("[Terbaik] %s | rar=%s prog=%s val=%s berat=%s chance=%s%s",
                 tostring(i.name), tostring(i.rar), tostring(i.prog), fmtVal(i.val),
                 fmtKg(i.weight),
                 i.chance > 0 and ("1/" .. fmtVal(i.chance)) or "-",
@@ -2154,7 +2154,7 @@ local function boot()
         else
             stealIdx = (stealIdx % #eggs) + 1
             e = eggs[stealIdx]
-            log(string.format("[Rotasi] egg %d/%d %s", stealIdx, #eggs, tostring(e.m.Name):sub(1, 24)))
+            log(string.format("[Bergiliran] egg %d/%d %s", stealIdx, #eggs, tostring(e.m.Name):sub(1, 24)))
         end
 
         return doSteal(e, manual)
@@ -2191,9 +2191,9 @@ local function boot()
         local b, src = basePos(true)
         if b then
             teleport(b)
-            log("TP ke base (" .. tostring(src) .. ").")
+            log("Ke base (" .. tostring(src) .. ").")
         else
-            ui:toast("Base belum diketahui. Tekan Set Base dulu.", "warn")
+            ui:toast("Base belum diset. Tekan Jadikan Base di Sini dulu.", "warn")
         end
     end
 
@@ -2205,7 +2205,7 @@ local function boot()
         busy = true
         task.spawn(function()
             local ok, err = pcall(stealOne, true)
-            if not ok then log("ERROR manual steal: " .. tostring(err)) end
+            if not ok then log("ERROR ambil satu egg: " .. tostring(err)) end
             busy = false
         end)
     end
@@ -2214,9 +2214,9 @@ local function boot()
     local pgHome = ui:page("home", "Utama", "🏠")
     pgHome:section("Status")
     local homeStatus = pgHome:card({
-        {"Steal", "-"},
-        {"Hatch", "-"},
-        {"Sell", "-"},
+        {"Ambil", "-"},
+        {"Tetas", "-"},
+        {"Jual", "-"},
         {"Area", "-"},
         {"Base", "-"},
         {"Egg area", "-"},
@@ -2224,63 +2224,63 @@ local function boot()
     })
 
     pgHome:section("Kontrol Cepat")
-    local homeSteal = pgHome:toggle("Auto Steal Egg", state.steal, function(v) setFlag("steal", v) end)
+    local homeSteal = pgHome:toggle("Ambil Egg Otomatis", state.steal, function(v) setFlag("steal", v) end)
     bind("steal", homeSteal)
-    local homeBest = pgHome:toggle("Pilih Egg Terbaik", state.best, function(v) setFlag("best", v) end)
+    local homeBest = pgHome:toggle("Ambil Egg Terbaik", state.best, function(v) setFlag("best", v) end)
     bind("best", homeBest)
-    local homeHatch = pgHome:toggle("Auto Hatch", state.hatch, function(v) setFlag("hatch", v) end)
+    local homeHatch = pgHome:toggle("Tetaskan Egg Otomatis", state.hatch, function(v) setFlag("hatch", v) end)
     bind("hatch", homeHatch)
-    local homeSell = pgHome:toggle("Auto Sell Pets", state.sell, function(v) setFlag("sell", v) end)
+    local homeSell = pgHome:toggle("Jual Pet Otomatis", state.sell, function(v) setFlag("sell", v) end)
     bind("sell", homeSell)
 
     pgHome:buttonRow({
-        { text = "TP Area", callback = function() tpArea(state.area) end },
-        { text = "TP Base", callback = tpBase },
-        { text = "Ambil 1x", callback = manualSteal, variant = "primary" },
+        { text = "Ke Area", callback = function() tpArea(state.area) end },
+        { text = "Ke Base", callback = tpBase },
+        { text = "Ambil Satu", callback = manualSteal, variant = "primary" },
     })
-    pgHome:note("Aktifkan Auto Steal lalu atur Best Egg di halaman Filter. Kalau filter terlalu ketat, script otomatis fallback (bisa dimatikan).")
+    pgHome:note("Nyalakan Ambil Egg Otomatis, lalu atur rarity minimum di halaman Filter. Kalau tidak ada yang cocok, script mengambil egg apa adanya.")
 
     --[[ ===================== 15. STEAL PAGE ===================== ]]
-    local pgSteal = ui:page("steal", "Steal", "🥚")
-    pgSteal:section("Auto Steal")
-    local stealToggle = pgSteal:toggle("Auto Steal Egg", state.steal, function(v) setFlag("steal", v) end)
+    local pgSteal = ui:page("steal", "Ambil", "🥚")
+    pgSteal:section("Ambil Egg")
+    local stealToggle = pgSteal:toggle("Ambil Egg Otomatis", state.steal, function(v) setFlag("steal", v) end)
     bind("steal", stealToggle)
-    local bestToggle = pgSteal:toggle("Pilih Egg Terbaik (Best Egg)", state.best, function(v) setFlag("best", v) end)
+    local bestToggle = pgSteal:toggle("Ambil Egg Terbaik", state.best, function(v) setFlag("best", v) end)
     bind("best", bestToggle)
-    local bestDrop = pgSteal:dropdown("Mode ambil", {"Bergiliran", "Terbaik (Best)"}, state.best and 2 or 1, function(_, idx)
+    local bestDrop = pgSteal:dropdown("Cara ambil", {"Bergiliran", "Terbaik"}, state.best and 2 or 1, function(_, idx)
         setFlag("best", idx == 2)
     end)
     bind("best", { set = function(v) bestDrop:set(v and 2 or 1) end })
 
-    local areaDropSteal = pgSteal:dropdown("Area target", AREA_NAMES, state.area, function(_, idx) setArea(idx, false, true) end)
+    local areaDropSteal = pgSteal:dropdown("Area tujuan", AREA_NAMES, state.area, function(_, idx) setArea(idx, false, true) end)
     areaRefs[#areaRefs + 1] = areaDropSteal
-    pgSteal:button("Pilih Area Terbaik", function() pcall(pickBestArea, false) end)
+    pgSteal:button("Cari Area Terbaik", function() pcall(pickBestArea, false) end)
 
-    pgSteal:stepper("Jeda setelah steal", 0.2, 3.0, 0.1, state.stealDelay, function(v)
+    pgSteal:stepper("Jeda setelah ambil", 0.2, 3.0, 0.1, state.stealDelay, function(v)
         state.stealDelay = v
     end, function(v) return string.format("%.1fs", v) end)
 
-    pgSteal:button("Ambil 1x Sekarang", manualSteal, { variant = "primary" })
-    pgSteal:note("Kalau 'Pilih Egg Terbaik' ON, script memilih egg dengan skor tertinggi sesuai halaman Filter. Kalau OFF, egg diambil bergiliran.")
+    pgSteal:button("Ambil Satu Sekarang", manualSteal, { variant = "primary" })
+    pgSteal:note("Kalau 'Ambil Egg Terbaik' menyala, script memilih egg dengan skor tertinggi sesuai pengaturan di Filter. Kalau mati, egg diambil bergiliran.")
 
     --[[ ===================== 16. AUTO PAGE ===================== ]]
-    local pgAuto = ui:page("auto", "Auto", "⚙️")
-    pgAuto:section("Auto Hatch")
-    local hatchToggle = pgAuto:toggle("Auto Hatch", state.hatch, function(v) setFlag("hatch", v) end)
+    local pgAuto = ui:page("auto", "Tetas & Jual", "⚙️")
+    pgAuto:section("Tetaskan Egg")
+    local hatchToggle = pgAuto:toggle("Tetaskan Egg Otomatis", state.hatch, function(v) setFlag("hatch", v) end)
     bind("hatch", hatchToggle)
-    pgAuto:stepper("Jeda hatch", 0.5, 5.0, 0.1, state.hatchDelay, function(v)
+    pgAuto:stepper("Jeda tetas", 0.5, 5.0, 0.1, state.hatchDelay, function(v)
         state.hatchDelay = v
     end, function(v) return string.format("%.1fs", v) end)
 
     pgAuto:divider()
-    pgAuto:section("Auto Sell")
-    local sellToggle = pgAuto:toggle("Auto Sell Pets", state.sell, function(v) setFlag("sell", v) end)
+    pgAuto:section("Jual Pet")
+    local sellToggle = pgAuto:toggle("Jual Pet Otomatis", state.sell, function(v) setFlag("sell", v) end)
     bind("sell", sellToggle)
-    pgAuto:stepper("Jeda sell", 0.5, 5.0, 0.1, state.sellDelay, function(v)
+    pgAuto:stepper("Jeda jual", 0.5, 5.0, 0.1, state.sellDelay, function(v)
         state.sellDelay = v
     end, function(v) return string.format("%.1fs", v) end)
 
-    pgAuto:note("Hatch memakai prompt yang mengandung 'Hatch'. Sell memakai prompt yang mengandung 'Sell'. Prompt dicari ulang tiap 2 detik.")
+    pgAuto:note("Tetas memakai prompt bertuliskan 'Hatch'. Jual memakai prompt 'Sell'. Prompt dicek ulang tiap 2 detik.")
 
     --[[ ===================== 17. FILTER PAGE ===================== ]]
     local function testFilter()
@@ -2313,54 +2313,54 @@ local function boot()
             end
             local best = pickBest(eggs, true)
             if best then
-                ui:toast("Best: " .. tostring(best.info.name))
+                ui:toast("Terbaik: " .. tostring(best.info.name))
             else
-                ui:toast("Tidak ada kandidat. Cek filter / fallback.", "warn")
+                ui:toast("Tidak ada yang cocok. Turunkan batas atau nyalakan 'Ambil Semua kalau Filter Kosong'.", "warn")
             end
         end)
     end
 
     local pgFilter = ui:page("filter", "Filter", "🎯")
-    pgFilter:section("Best Egg")
-    local filterBest = pgFilter:toggle("Aktifkan Best Egg", state.best, function(v) setFlag("best", v) end)
+    pgFilter:section("Pilihan Egg")
+    local filterBest = pgFilter:toggle("Ambil Egg Terbaik", state.best, function(v) setFlag("best", v) end)
     bind("best", filterBest)
 
     pgFilter:dropdown("Urutkan", SORTS, state.sort, function(_, idx)
         state.sort = idx
-        log("Urut: " .. SORTS[idx])
+        log("Urutan: " .. SORTS[idx])
         if updateHome then updateHome() end
     end)
-    local areaDropFilter = pgFilter:dropdown("Area target", AREA_NAMES, state.area, function(_, idx) setArea(idx, false, true) end)
+    local areaDropFilter = pgFilter:dropdown("Area tujuan", AREA_NAMES, state.area, function(_, idx) setArea(idx, false, true) end)
     areaRefs[#areaRefs + 1] = areaDropFilter
-    pgFilter:button("Pilih Area Terbaik", function() pcall(pickBestArea, false) end)
-    pgFilter:dropdown("Min Rarity", RARITY_NAMES, state.minRar, function(_, idx)
+    pgFilter:button("Cari Area Terbaik", function() pcall(pickBestArea, false) end)
+    pgFilter:dropdown("Rarity Minimum", RARITY_NAMES, state.minRar, function(_, idx)
         state.minRar = idx
-        log("Min Rarity: " .. RARITY_NAMES[idx])
+        log("Rarity minimum: " .. RARITY_NAMES[idx])
         if updateHome then updateHome() end
     end)
-    pgFilter:dropdown("Min Progression", PROG_NAMES, state.minProg, function(_, idx)
+    pgFilter:dropdown("Progres Minimum", PROG_NAMES, state.minProg, function(_, idx)
         state.minProg = idx
-        log("Min Progression: " .. PROG_NAMES[idx])
+        log("Progres minimum: " .. PROG_NAMES[idx])
         if updateHome then updateHome() end
     end)
-    pgFilter:dropdown("Min Value", VALUE_NAMES, state.minVal, function(_, idx)
+    pgFilter:dropdown("Nilai Minimum", VALUE_NAMES, state.minVal, function(_, idx)
         state.minVal = idx
-        log("Min Value: " .. VALUE_NAMES[idx])
+        log("Nilai minimum: " .. VALUE_NAMES[idx])
         if updateHome then updateHome() end
     end)
 
-    local filterAll = pgFilter:toggle("Semua Area", state.allAreas, function(v) setFlag("allAreas", v) end)
+    local filterAll = pgFilter:toggle("Cari di Semua Area", state.allAreas, function(v) setFlag("allAreas", v) end)
     bind("allAreas", filterAll)
-    local filterFallback = pgFilter:toggle("Fallback kalau filter kosong", state.fallback, function(v) setFlag("fallback", v) end)
+    local filterFallback = pgFilter:toggle("Ambil Semua kalau Filter Kosong", state.fallback, function(v) setFlag("fallback", v) end)
     bind("fallback", filterFallback)
-    local filterStrict = pgFilter:toggle("Filter ketat (data kosong = tolak)", state.strict, function(v) setFlag("strict", v) end)
+    local filterStrict = pgFilter:toggle("Tolak Egg tanpa Data", state.strict, function(v) setFlag("strict", v) end)
     bind("strict", filterStrict)
 
-    pgFilter:button("Tes Pilih Terbaik Sekarang", testFilter, { variant = "primary" })
+    pgFilter:button("Cek Egg Terbaik", testFilter, { variant = "primary" })
 
-    pgFilter:note("Filter aman: kalau game tidak memberi data rarity/value untuk suatu egg, egg itu TIDAK otomatis ditolak. Pakai Min Progression untuk filter yang paling andal. Filter ketat hanya untuk debugging.")
-    pgFilter:note("Urutan Auto: egg event/night dulu, lalu Rarity, Progression, Chance, Value, Berat. Kalau rarity tidak terbaca, Progression yang menentukan.")
-    pgFilter:note("Dropdown Area target mengunci scope ke area itu (Semua Area otomatis OFF). Tombol 'Pilih Area Terbaik' mencari area dengan egg skor tertinggi.")
+    pgFilter:note("Kalau rarity/value suatu egg belum terbaca, egg itu tetap bisa diambil. Progres Minimum paling bisa diandalkan. 'Tolak Egg tanpa Data' hanya untuk mencoba filter ketat.")
+    pgFilter:note("Urutan rekomendasi: egg event/night dulu, lalu rarity, progres, peluang, nilai, berat. Kalau rarity kosong, progres yang menentukan.")
+    pgFilter:note("Area tujuan membatasi pencarian ke area itu (Cari di Semua Area otomatis mati). Tombol 'Cari Area Terbaik' memilih area yang egg-nya paling bagus.")
 
     --[[ ===================== 18. AREA PAGE ===================== ]]
     local pgArea = ui:page("area", "Area", "🗺️")
@@ -2368,26 +2368,26 @@ local function boot()
     local areaDrop = pgArea:dropdown("Area", AREA_NAMES, state.area, function(_, idx) setArea(idx, false, true) end)
     areaRefs[#areaRefs + 1] = areaDrop
 
-    local autoAreaToggle = pgArea:toggle("Auto pilih area terbaik", state.autoArea, function(v) setFlag("autoArea", v) end)
+    local autoAreaToggle = pgArea:toggle("Cari Area Terbaik Otomatis", state.autoArea, function(v) setFlag("autoArea", v) end)
     bind("autoArea", autoAreaToggle)
     areaAutoRef = autoAreaToggle
 
     pgArea:buttonRow({
         { text = "< Sebelumnya", callback = function() setArea(state.area - 1, false, true) end },
-        { text = "Pilih Area Terbaik", callback = function() pcall(pickBestArea, false) end, variant = "primary" },
+        { text = "Cari Area Terbaik", callback = function() pcall(pickBestArea, false) end, variant = "primary" },
         { text = "Berikutnya >", callback = function() setArea(state.area + 1, false, true) end },
     })
-    pgArea:button("Teleport ke area", function() tpArea(state.area) end)
+    pgArea:button("Ke Area", function() tpArea(state.area) end)
 
     pgArea:divider()
     pgArea:section("Base")
     pgArea:buttonRow({
-        { text = "TP ke Base", callback = tpBase },
-        { text = "Set Base (di sini)", callback = function()
+        { text = "Ke Base", callback = tpBase },
+        { text = "Jadikan Base di Sini", callback = function()
             if setBaseHere() then ui:toast("Base diset.") else ui:toast("Karakter belum siap.", "warn") end
         end },
     })
-    pgArea:note("Base dipakai untuk kembali setelah mengambil egg. Kalau belum diset, script mencoba PlacedEggRenders / PlotSign / posisi awal.")
+    pgArea:note("Base dipakai untuk kembali setelah mengambil egg. Kalau belum diset, script mencari posisinya sendiri.")
 
     --[[ ===================== 19. LOG PAGE ===================== ]]
     local pgLog = ui:page("log", "Log", "📜")
@@ -2444,26 +2444,26 @@ local function boot()
     end
 
     pgLog:buttonRow({
-        { text = "Copy All", callback = copyLog },
-        { text = "Clear", callback = clearLog, variant = "danger" },
+        { text = "Salin Semua", callback = copyLog },
+        { text = "Hapus", callback = clearLog, variant = "danger" },
     })
-    pgLog:toggle("Auto-scroll ke bawah", autoScroll, function(v)
+    pgLog:toggle("Ikuti Log Terbaru", autoScroll, function(v)
         autoScroll = v
         if v then refreshLogUI() end
     end)
-    pgLog:note("Disimpan 4000 baris (maks 3000 karakter/baris). Tampilan hanya 300 baris terakhir supaya ringan; Copy All mengambil semua.")
+    pgLog:note("Tersimpan 4000 baris. Tampilan hanya 300 baris terakhir supaya ringan. Tombol Salin Semua mengambil seluruh log.")
 
     --[[ ===================== 21. DASHBOARD UPDATE ===================== ]]
     local function refreshHome()
         if not homeStatus then return end
         if ui.current ~= "home" then return end
         if state.steal then
-            homeStatus.set("Steal", state.best and "ON - Best" or "ON - Rotasi", C.green)
+            homeStatus.set("Ambil", state.best and "Aktif - Terbaik" or "Aktif - Bergiliran", C.green)
         else
-            homeStatus.set("Steal", "OFF", C.sub)
+            homeStatus.set("Ambil", "Mati", C.sub)
         end
-        homeStatus.set("Hatch", state.hatch and "ON" or "OFF", state.hatch and C.green or C.sub)
-        homeStatus.set("Sell", state.sell and "ON" or "OFF", state.sell and C.green or C.sub)
+        homeStatus.set("Tetas", state.hatch and "Aktif" or "Mati", state.hatch and C.green or C.sub)
+        homeStatus.set("Jual", state.sell and "Aktif" or "Mati", state.sell and C.green or C.sub)
         homeStatus.set("Area", AREAS[state.area][1] .. (state.allAreas and " (semua)" or ""), C.text)
 
         local b, src = basePos()
@@ -2513,7 +2513,7 @@ local function boot()
             if state.steal and not busy then
                 busy = true
                 local ok, err = pcall(stealOne, false)
-                if not ok then log("ERROR stealOne: " .. tostring(err)) end
+                if not ok then log("ERROR ambil egg: " .. tostring(err)) end
                 busy = false
                 task.wait(math.max(0.2, state.stealDelay))
             end

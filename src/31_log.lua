@@ -29,7 +29,7 @@
             if hidden > 0 then start = hidden + 1 end
             local view = {}
             if hidden > 0 then
-                view[1] = "... " .. hidden .. " baris sebelumnya disembunyikan (Copy All untuk semua) ..."
+                view[1] = "... " .. hidden .. " baris sebelumnya disembunyikan (Salin Semua untuk semua) ..."
             end
             for i = start, #logs do view[#view + 1] = logs[i] end
             logLabel.Text = table.concat(view, "\n")
