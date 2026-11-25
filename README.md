@@ -15,28 +15,24 @@ Folder ini siap dipush ke GitHub. Script asli di `../Lainnya/BikeForEggsMobile_v
 2. Paste `loader.lua` ke `LocalScript`.
 3. Pilih sumber:
    - **GitHub raw**: default sudah terisi `danu-dev/roblox` branch `main`. Repo harus PUBLIC.
-   - **Netlify**: pakai CLI seperti di bawah, lalu isi `NETLIFY_URL` di `loader.lua`.
+   - **Netlify**: sudah di-deploy dan `NETLIFY_URL` sudah terisi di `loader.lua`.
 
-#### Deploy Netlify pakai CLI
+#### Site Netlify aktif
+- Project: `bikeforeggs-loader`
+- Team: `YE` (`danzsukargb`)
+- URL: https://bikeforeggs-loader.netlify.app
+- File script: https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua
+- Project ID: `3c1e05d6-93c9-453a-857a-2d4f4c68702e`
+
+`loader.lua` sudah memakai URL file di atas sebagai sumber utama.
+
+#### Deploy ulang pakai CLI
 ```sh
-npm install -g netlify-cli
-netlify login
-netlify init          # sekali saja, pilih "Create & configure a new site"
-sh deploy-netlify.sh
+sh prepare-netlify.sh
+netlify deploy --prod --dir=netlify --no-build
 ```
 
-Kalau site sudah ada dan ingin di-link:
-```sh
-netlify link --id <site-id>
-NETLIFY_SITE_ID=<site-id> sh deploy-netlify.sh
-```
-
-`deploy-netlify.sh` otomatis menjalankan `build.sh`, menyalin script + logo ke folder `netlify/`, lalu `netlify deploy --prod --dir=netlify`.
-
-Setelah deploy, buka URL yang muncul. Isi di `loader.lua`:
-```lua
-local NETLIFY_URL = "https://nama-site.netlify.app/BikeForEggsMobile_v5_2.lua"
-```
+`deploy-netlify.sh` juga tersedia untuk alur lama (build + deploy). `netlify init` sudah pernah dijalankan: skill Netlify terpasang di `.agents/skills` dan MCP server ditambahkan ke `opencode.jsonc`.
 
 Logo: upload `logo.jpg` ke Roblox lalu isi `LOGO_ID`. Kalau kosong, loader menggambar ikon telur biru.
 

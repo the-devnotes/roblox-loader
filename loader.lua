@@ -16,7 +16,7 @@ local REPO = "roblox"
 local BRANCH = "main"
 local FILE = "BikeForEggsMobile_v5_2.lua"
 local LOGO_ID = "" -- contoh: "123456789"
-local NETLIFY_URL = "" -- contoh: "https://nama-site.netlify.app/dist/BikeForEggsMobile_v5_2.lua"
+local NETLIFY_URL = "https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua"
 
 local URL = "https://raw.githubusercontent.com/" .. USER .. "/" .. REPO .. "/" .. BRANCH .. "/dist/" .. FILE
 local FALLBACK = "https://gist.githubusercontent.com/danu-dev/5919ac4fe9d4291c2aee8bfdfe0b06a1/raw/7e9c83746ebb8f2bcada1fa78817dd7e769bc23f/" .. FILE

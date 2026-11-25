@@ -8,20 +8,22 @@
 - Netlify bisa dipakai asal file `.lua` ikut ter-deploy dan site/public accessible. CORS bukan masalah untuk `HttpGet`/`GetAsync`.
 - `luac -p loader.lua` OK.
 
-## Deploy Netlify pakai CLI (pending eksekusi user)
-- File disiapkan: `netlify.toml` (`publish = "netlify"`, build command `sh prepare-netlify.sh`), `prepare-netlify.sh`, `deploy-netlify.sh`, `netlify/index.html`, `netlify/_headers`, `netlify/logo.jpg`, `netlify/BikeForEggsMobile_v5_2.lua`.
-- `sh prepare-netlify.sh` sudah dijalankan & OK; folder `netlify/` berisi script, logo, halaman status, dan header (`text/plain` + no-cache).
-- Urutan user di environment dengan Node normal:
-  ```sh
-  npm install -g netlify-cli
-  netlify login
-  netlify init          # sekali; atau netlify link --id <site-id>
-  sh deploy-netlify.sh
-  ```
-- `deploy-netlify.sh` menjalankan build + salin file, lalu `netlify deploy --prod --dir=netlify` (memakai `NETLIFY_SITE_ID` kalau diset).
-- Setelah deploy: isi `NETLIFY_URL` di `loader.lua` dengan `https://<site>.netlify.app/BikeForEggsMobile_v5_2.lua`.
-- Catatan: Node di Termux sesi ini rusak (`cannot locate symbol _ZNSt6__ndk113__hash_memoryEPKvm`), jadi deploy CLI tidak bisa dijalankan di sini. Perlu dijalankan user di PC/WSL/Termux dengan Node yang berfungsi.
-- Belum ter-commit pada checkout `7c4c171`.
+## Deploy Netlify pakai CLI — SELESAI
+- Node diperbaiki: `libc++` di-upgrade `27c → 30` (error symbol `hash_memory` hilang). `node v26.13.1`, `npm 12.2.3`.
+- `netlify-cli@27.20.1` terpasang global. Install script di-allow untuk `netlify-cli`, `esbuild`, `unix-dgram`.
+- Login: `netlify login --request ...` → user approve → ` Status: authorized` (`arsab201@gmail.com`, team `YE` / `danzsukargb`).
+- `netlify init` dijalankan: 16 skill Netlify terpasang di `.agents/skills`, MCP server ditambahkan ke `opencode.jsonc`. Project setup interaktif dilewati (tanpa terminal).
+- Link via git remote gagal (belum ada project terhubung), lalu dibuat project baru:
+  - Nama: `bikeforeggs-loader`
+  - Project ID: `3c1e05d6-93c9-453a-857a-2d4f4c68702e`
+  - URL: https://bikeforeggs-loader.netlify.app
+- Deploy sukses: `netlify deploy --prod --dir=netlify --no-build` → 4 file live.
+  - Deploy ID: `6b07346ef1baed9de5de219c`
+  - File: https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua
+  - Logo: https://bikeforeggs-loader.netlify.app/logo.jpg
+- `NETLIFY_URL` di `loader.lua` sudah diisi dengan URL file di atas. `luac -p loader.lua` wajib dicek ulang sebelum commit.
+- Deploy ulang: `sh prepare-netlify.sh && netlify deploy --prod --dir=netlify --no-build`.
+- Catatan: `netlify deploy --prod` tanpa `--dir` sempat timeout; pakai `--dir=netlify --no-build` yang terbukti sukses.
 
 ## v6.1 — penamaan UI
 Permintaan user: jangan terdengar "AI banget"/jargon ganda; pakai deskripsi yang sesuai fitur.
