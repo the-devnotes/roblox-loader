@@ -1,10 +1,12 @@
 # TODO / handoff cepat
 
 ## Loader v6 — UI biru/hitam + Netlify
-- `loader.lua` ditulis ulang jadi LocalScript dengan ScreenGui `BFE_Loader_v6`: latar hitam, aksen biru, kartu melingkar, bar progres, status, tombol `Coba Lagi` dan `Salin Info`.
+- `loader.lua` sekarang diposisikan sebagai **ClipperHub Loader (universal)**: judul `CLIPPERHUB`, subjudul `UNIVERSAL LOADER`, tanda `By ClipperHub`.
+- Konfigurasi dipindah ke tabel `SOURCES` di atas. Tinggal ganti/tambah URL untuk script lain; sumber dicoba berurutan. `LOGO_ID` tetap opsional.
+- ScreenGui `BFE_Loader_v6`: latar hitam, aksen biru, kartu melingkar, bar progres, status, tombol `Coba Lagi` dan `Salin Info`.
 - Ikon: titik status dan ikon telur digambar pakai `Frame` + `UICorner`. Tidak ada emoji di loader.
 - `LOGO_ID`: kalau diisi dengan Asset ID `logo.jpg` yang sudah di-upload, loader menampilkan gambar tersebut. Kalau kosong, ikon telur biru dipakai.
-- `NETLIFY_URL`: kalau diisi, dipakai sebagai sumber utama. Urutan fetch: Netlify → GitHub raw → gist cadangan.
+- `SOURCES`: daftar URL yang dicoba berurutan. Secara default berisi URL Netlify Bike For Eggs; contoh GitHub raw/gist tersedia sebagai komentar.
 - Netlify bisa dipakai asal file `.lua` ikut ter-deploy dan site/public accessible. CORS bukan masalah untuk `HttpGet`/`GetAsync`.
 - `luac -p loader.lua` OK.
 
@@ -21,7 +23,7 @@
   - Deploy ID: `6b07346ef1baed9de5de219c`
   - File: https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua
   - Logo: https://bikeforeggs-loader.netlify.app/logo.jpg
-- `NETLIFY_URL` di `loader.lua` sudah diisi dengan URL file di atas. `luac -p loader.lua` wajib dicek ulang sebelum commit.
+- URL file di atas sudah terpasang sebagai entri pertama `SOURCES` di `loader.lua`. `luac -p loader.lua` wajib dicek ulang sebelum commit.
 - Deploy ulang: `sh prepare-netlify.sh && netlify deploy --prod --dir=netlify --no-build`.
 - Catatan: `netlify deploy --prod` tanpa `--dir` sempat timeout; pakai `--dir=netlify --no-build` yang terbukti sukses.
 

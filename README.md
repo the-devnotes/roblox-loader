@@ -10,12 +10,11 @@ Folder ini siap dipush ke GitHub. Script asli di `../Lainnya/BikeForEggsMobile_v
 3. Paste ke satu `LocalScript` (misal di `StarterPlayerScripts`).
 4. Jalankan. Script ini **standalone**: BFEUI sudah ditanam, tidak butuh `HttpGet` / module luar.
 
-### Opsi B — load lewat URL (GitHub raw / Netlify)
-1. `loader.lua` sekarang punya UI biru + hitam, ikon digambar (tanpa emoji).
+### Opsi B — Loader ClipperHub (universal)
+1. `loader.lua` memakai UI biru + hitam, ikon digambar (tanpa emoji), dan tanda `By ClipperHub`.
 2. Paste `loader.lua` ke `LocalScript`.
-3. Pilih sumber:
-   - **GitHub raw**: default sudah terisi `danu-dev/roblox` branch `main`. Repo harus PUBLIC.
-   - **Netlify**: sudah di-deploy dan `NETLIFY_URL` sudah terisi di `loader.lua`.
+3. Untuk script lain, edit tabel `SOURCES` di bagian atas loader. Isi URL Netlify / GitHub raw / gist; sumber dicoba berurutan.
+4. Default `SOURCES` masih mengarah ke file Bike For Eggs di Netlify. Contoh sumber lain sudah disiapkan dalam bentuk komentar.
 
 #### Site Netlify aktif
 - Project: `bikeforeggs-loader`

@@ -1,32 +1,38 @@
 -- [LocalScript] | Lokasi: StarterPlayer > StarterPlayerScripts (paste sebagai LocalScript)
 --[[
-    Bike For Eggs - Loader v6
+    ClipperHub Loader - Universal
 
-    Tamp biru + hitam, mengikuti logo.jpg.
-    Semua ikon digambar pakai Frame, tidak memakai emoji.
+    Loader serbaguna: ganti daftar SOURCES untuk script apa pun.
+    Tamp biru + hitam, ikon digambar pakai Frame (tanpa emoji).
 
-    Kalau logo.jpg sudah di-upload ke Roblox, isi LOGO_ID dengan Asset ID-nya.
+    Kalau logo ClipperHub sudah di-upload ke Roblox, isi LOGO_ID dengan Asset ID-nya.
     Kalau dikosongkan, loader menggambar ikon telur biru sendiri.
-
-    Netlify: isi NETLIFY_URL dengan URL file .lua yang sudah di-deploy.
-    Urutan ambil: Netlify (kalau diisi) -> GitHub raw -> gist cadangan.
 ]]
-local USER = "danu-dev"
-local REPO = "roblox"
-local BRANCH = "main"
-local FILE = "BikeForEggsMobile_v5_2.lua"
+local APP_TITLE = "CLIPPERHUB"
+local APP_SUBTITLE = "UNIVERSAL LOADER"
+local CREDIT = "By ClipperHub"
 local LOGO_ID = "" -- contoh: "123456789"
-local NETLIFY_URL = "https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua"
 
-local URL = "https://raw.githubusercontent.com/" .. USER .. "/" .. REPO .. "/" .. BRANCH .. "/dist/" .. FILE
-local FALLBACK = "https://gist.githubusercontent.com/danu-dev/5919ac4fe9d4291c2aee8bfdfe0b06a1/raw/7e9c83746ebb8f2bcada1fa78817dd7e769bc23f/" .. FILE
+-- Sumber dicoba berurutan. Tambah/hapus baris sesuai script yang dimuat.
+local SOURCES = {
+    { label = "netlify.app", url = "https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua" },
+    -- { label = "raw.githubusercontent.com", url = "https://raw.githubusercontent.com/USER/REPO/main/dist/script.lua" },
+    -- { label = "gist.githubusercontent.com", url = "https://gist.githubusercontent.com/USER/ID/raw/script.lua" },
+}
 
 local sources = {}
-if NETLIFY_URL ~= "" then
-    sources[#sources + 1] = { url = NETLIFY_URL, label = "netlify.app" }
+for _, s in ipairs(SOURCES) do
+    if type(s.url) == "string" and s.url ~= "" then
+        sources[#sources + 1] = s
+    end
 end
-sources[#sources + 1] = { url = URL, label = "raw.githubusercontent.com" }
-sources[#sources + 1] = { url = FALLBACK, label = "gist.githubusercontent.com" }
+
+local function scriptName(url)
+    local name = tostring(url):match("([^/]+)$") or "script.lua"
+    return (name:gsub("%?.*$", ""))
+end
+
+local DISPLAY_NAME = sources[1] and scriptName(sources[1].url) or "script.lua"
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
@@ -177,7 +183,7 @@ inst("TextLabel", {
     Size = UDim2.new(1, -24, 0, 26),
     Position = UDim2.fromOffset(12, 116),
     BackgroundTransparency = 1,
-    Text = "BIKE FOR EGGS",
+    Text = APP_TITLE,
     TextColor3 = TEXT,
     Font = Enum.Font.GothamBold,
     TextSize = 19,
@@ -188,7 +194,7 @@ inst("TextLabel", {
     Size = UDim2.new(1, -24, 0, 16),
     Position = UDim2.fromOffset(12, 142),
     BackgroundTransparency = 1,
-    Text = "MOBILE LOADER",
+    Text = APP_SUBTITLE,
     TextColor3 = BLUE,
     Font = Enum.Font.GothamSemibold,
     TextSize = 10,
@@ -252,10 +258,22 @@ inst("TextLabel", {
     Size = UDim2.new(1, -48, 0, 18),
     Position = UDim2.fromOffset(24, 250),
     BackgroundTransparency = 1,
-    Text = "Script: " .. FILE,
+    Text = "Muat: " .. DISPLAY_NAME,
     TextColor3 = MUTED,
     Font = Enum.Font.Gotham,
     TextSize = 10,
+    TextXAlignment = Enum.TextXAlignment.Left,
+}, card)
+
+inst("TextLabel", {
+    Name = "Credit",
+    Size = UDim2.new(1, -48, 0, 18),
+    Position = UDim2.fromOffset(24, 282),
+    BackgroundTransparency = 1,
+    Text = CREDIT,
+    TextColor3 = BLUE,
+    Font = Enum.Font.GothamSemibold,
+    TextSize = 11,
     TextXAlignment = Enum.TextXAlignment.Left,
 }, card)
 
