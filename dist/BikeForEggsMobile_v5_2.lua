@@ -1098,7 +1098,7 @@ local function boot()
     local assetUidHints = {} -- Uid asli dari StealTargetEvent (bukan nama model AreaEgg_)
     -- Katalog metadata dari ReplicatedStorage.Directory._Index (diisi oleh 42_catalog).
     local catalog = {
-        at = -1e9, count = 0, err = 0, byKey = {}, rarRaw = nil, read = nil,
+        at = -1e9, count = 0, err = 0, byKey = {}, entries = {}, rarRaw = nil, read = nil,
         rarityNumber = {}, rarityLabel = {},
         compactKey = function(s)
             if type(s) ~= "string" then return nil end
@@ -1905,7 +1905,17 @@ local function boot()
         -- akurat untuk rarity/value/weight. Probe Record sudah terbukti selalu nil.
         local function applyCatalog(name)
             if type(name) ~= "string" or name == "" then return end
-            local e = catalog.byKey[string.lower(name)] or catalog.byKey[catalog.compactKey(name)]
+            local rawKey = string.lower(name)
+            local cmpKey = catalog.compactKey(name)
+            local e = catalog.byKey[rawKey] or catalog.byKey[cmpKey]
+            if not e then
+                for _, ent in ipairs(catalog.entries) do
+                    if ent.keys and (ent.keys[rawKey] or ent.keys[cmpKey]) then
+                        e = ent
+                        break
+                    end
+                end
+            end
             if not e then return end
             if info.name == "" and not genericEggName(e.name) then info.name = e.name end
             if e.rar > info.rar then info.rar = e.rar end
@@ -2211,10 +2221,14 @@ local function boot()
             local keys = {}
             addCatalogKeys(keys, mod.Name)
             addCatalogKeys(keys, info.name)
-            for _, f in ipairs({ "PetDisplayName", "DisplayName", "Name", "AssetCategory", "Category" }) do
-                local v = data[f]
-                if type(v) == "string" then addCatalogKeys(keys, v) end
+            for _, f in ipairs({ "PetDisplayName", "DisplayName", "Name", "AssetCategory", "Category", "_id" }) do
+                -- Beberapa modul memakai registry dengan __index ketat; indeks
+                -- field yang tidak ada harus di-pcall supaya tidak menggagalkan
+                -- seluruh pembacaan katalog.
+                local okF, v = pcall(function() return data[f] end)
+                if okF and type(v) == "string" then addCatalogKeys(keys, v) end
             end
+            info.keys = keys
             return info, keys
         end
 
@@ -2341,6 +2355,7 @@ local function boot()
 
             local n, errN, tried = 0, 0, 0
             catalog.byKey = {}
+            catalog.entries = {}
             local okRarity, errRarity = pcall(readRarityModule, verbose)
             if not okRarity and verbose then log("RARITY error: " .. tostring(errRarity)) end
 
@@ -2360,11 +2375,22 @@ local function boot()
                             .. (ok and ser(data):sub(1, 700) or tostring(data)))
                     end
                     if ok and type(data) == "table" then
-                        local okEntry = pcall(function()
-                            local info, keys = catalogInfoFromData(mod, data)
-                            for _, k in pairs(keys) do catalog.byKey[k] = info end
-                        end)
-                        if okEntry then n = n + 1 else errN = errN + 1 end
+                        local okEntry, info, keys = pcall(catalogInfoFromData, mod, data)
+                        if okEntry then
+                            local added = 0
+                            for _, k in pairs(keys) do
+                                catalog.byKey[k] = info
+                                added = added + 1
+                            end
+                            if verbose and tried <= 3 then
+                                log("CATALOG KEYS " .. mod.Name .. ": +" .. added .. " " .. ser(keys))
+                            end
+                            info.keys = keys
+                            catalog.entries[#catalog.entries + 1] = info
+                            n = n + 1
+                        else
+                            errN = errN + 1
+                        end
                     else
                         errN = errN + 1
                     end
@@ -3703,15 +3729,40 @@ local function boot()
         end)
         if not ok or not net then return end
 
-        local function walkEvent(t, fn, depth, seen)
-            if type(t) ~= "table" or (depth or 0) > 4 then return end
+        local function walkEvent(t, fn, depth, seen, parentKey)
+            if type(t) ~= "table" or (depth or 0) > 5 then return end
             seen = seen or {}
             if seen[t] then return end
             seen[t] = true
-            fn(t)
-            for _, v in pairs(t) do
-                if type(v) == "table" then walkEvent(v, fn, (depth or 0) + 1, seen) end
+            fn(t, parentKey)
+            for k, v in pairs(t) do
+                if type(v) == "table" then walkEvent(v, fn, (depth or 0) + 1, seen, k) end
             end
+        end
+
+        local function vecOf(v)
+            local tv = typeof(v)
+            if tv == "CFrame" then return v.Position end
+            if tv == "Vector3" then return v end
+            if type(v) == "table" then
+                if v.X then return Vector3.new(v.X, v.Y or 0, v.Z or 0) end
+                if v[1] then return Vector3.new(v[1], v[2] or 0, v[3] or 0) end
+            end
+            return nil
+        end
+
+        local function matchEgg(pos, areaId)
+            if not pos then return nil end
+            local best, bd
+            for _, e in ipairs(areaEggs(true)) do
+                local ai = eggAreaIndex(e)
+                if not areaId or string.lower(AREAS[ai][1]) == string.lower(areaId) then
+                    local d = (e.pos - pos).Magnitude
+                    if not bd or d < bd then best, bd = e, d end
+                end
+            end
+            if best and (bd or 9999) < 15 then return best end
+            return nil
         end
 
         local function readRarity(t)
@@ -3741,9 +3792,47 @@ local function boot()
                         local v = select(i, ...)
                         if type(v) == "table" then
                             pcall(indexSnapshot, v, 0)
-                            walkEvent(v, function(t)
+                            walkEvent(v, function(t, parentKey)
                                 local rar = readRarity(t)
                                 local cat = t.AssetCategory or t.Category or t.DisplayName or t.PetDisplayName
+
+                                -- Eggs: RuntimeOwnerUpdated mengirim Records={Egg_<guid>={AssetCategory=...}}.
+                                -- Ini kunci langsung ke model AreaEgg_<guid> di plot.
+                                if type(parentKey) == "string" and string.sub(parentKey, 1, 4) == "Egg_" then
+                                    local g = guidOf(parentKey)
+                                    if g then
+                                        local ukey = string.lower(g)
+                                        if type(cat) == "string" and cat ~= "" then
+                                            uidCategory[ukey] = string.lower(cat)
+                                            changed = true
+                                        end
+                                        snapCache[ukey] = t
+                                        snapMeta[ukey] = t
+                                        if type(t.AreaId) == "string" then uidArea[ukey] = t.AreaId end
+                                        if rar > 0 and type(cat) == "string" then
+                                            categoryRarity[string.lower(cat)] = rar
+                                        end
+                                    end
+                                end
+
+                                -- AreaEggUpdated mengirim AssetCategory + BoundsCFrame tanpa Uid.
+                                -- Cocokkan lewat posisi egg terdekat di area yang sama.
+                                if type(cat) == "string" and cat ~= ""
+                                    and string.find(name, "AreaEgg", 1, true) then
+                                    local pos = vecOf(t.BoundsCFrame or t.CFrame or t.Position)
+                                    local e = matchEgg(pos, t.AreaId)
+                                    if e and e.uid then
+                                        uidCategory[e.uid] = string.lower(cat)
+                                        if type(t.AreaId) == "string" then uidArea[e.uid] = t.AreaId end
+                                        if string.find(name, "AreaEggUpdated", 1, true) then
+                                            snapCache[e.uid] = t
+                                            snapMeta[e.uid] = t
+                                        end
+                                        if rar > 0 then categoryRarity[string.lower(cat)] = rar end
+                                        changed = true
+                                    end
+                                end
+
                                 if type(cat) == "string" and cat ~= "" then
                                     local key = string.lower(cat)
                                     if rar > 0 and (not categoryRarity[key] or rar > categoryRarity[key]) then

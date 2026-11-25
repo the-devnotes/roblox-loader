@@ -298,7 +298,17 @@
         -- akurat untuk rarity/value/weight. Probe Record sudah terbukti selalu nil.
         local function applyCatalog(name)
             if type(name) ~= "string" or name == "" then return end
-            local e = catalog.byKey[string.lower(name)] or catalog.byKey[catalog.compactKey(name)]
+            local rawKey = string.lower(name)
+            local cmpKey = catalog.compactKey(name)
+            local e = catalog.byKey[rawKey] or catalog.byKey[cmpKey]
+            if not e then
+                for _, ent in ipairs(catalog.entries) do
+                    if ent.keys and (ent.keys[rawKey] or ent.keys[cmpKey]) then
+                        e = ent
+                        break
+                    end
+                end
+            end
             if not e then return end
             if info.name == "" and not genericEggName(e.name) then info.name = e.name end
             if e.rar > info.rar then info.rar = e.rar end

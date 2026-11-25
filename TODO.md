@@ -1,5 +1,12 @@
 # TODO / handoff cepat
 
+## v5.9d — hubungkan event ke katalog
+- Log membuktikan `Eggs: RuntimeOwnerUpdated` mengirim `Records={Egg_<guid>={AssetCategory="Eternal Lunar Dragon", ...}}` dan `AreaEggUpdated` mengirim `AssetCategory` + `BoundsCFrame` tanpa Uid.
+- `walkEvent()` sekarang meneruskan parent key. Record `Egg_<guid>` dipetakan langsung ke `uidCategory[guid]` + `snapCache[guid]`, sehingga `eggInfo()` bisa mencari kategori itu di katalog `_Index`.
+- `AreaEggUpdated` dicocokkan ke egg terdekat (maks 15 stud) memakai `BoundsCFrame`/`Position` + `AreaId`.
+- `catalogInfoFromData()` sekarang menyimpan `info.keys` dan modul juga masuk ke `catalog.entries`; `applyCatalog()` punya fallback scan kalau `catalog.byKey` hanya berisi 1 kunci (bug yang masih terlihat di log).
+- Indeks field modul dengan `__index` ketat sekarang di-`pcall`, jadi `CATALOG TABLE error` tidak lagi menggagalkan pembacaan `Assets`.
+
 ## v5.9c — kapasitas log
 - `MAX_LOG` 250 → `LOG_CAP.store = 4000`, panjang baris 420 → 3000 karakter.
 - UI Log hanya merender 300 baris terakhir + penanda "... N baris sebelumnya disembunyikan ..." supaya tetap ringan di HP.

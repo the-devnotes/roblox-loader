@@ -49,10 +49,14 @@
             local keys = {}
             addCatalogKeys(keys, mod.Name)
             addCatalogKeys(keys, info.name)
-            for _, f in ipairs({ "PetDisplayName", "DisplayName", "Name", "AssetCategory", "Category" }) do
-                local v = data[f]
-                if type(v) == "string" then addCatalogKeys(keys, v) end
+            for _, f in ipairs({ "PetDisplayName", "DisplayName", "Name", "AssetCategory", "Category", "_id" }) do
+                -- Beberapa modul memakai registry dengan __index ketat; indeks
+                -- field yang tidak ada harus di-pcall supaya tidak menggagalkan
+                -- seluruh pembacaan katalog.
+                local okF, v = pcall(function() return data[f] end)
+                if okF and type(v) == "string" then addCatalogKeys(keys, v) end
             end
+            info.keys = keys
             return info, keys
         end
 
@@ -179,6 +183,7 @@
 
             local n, errN, tried = 0, 0, 0
             catalog.byKey = {}
+            catalog.entries = {}
             local okRarity, errRarity = pcall(readRarityModule, verbose)
             if not okRarity and verbose then log("RARITY error: " .. tostring(errRarity)) end
 
@@ -198,11 +203,22 @@
                             .. (ok and ser(data):sub(1, 700) or tostring(data)))
                     end
                     if ok and type(data) == "table" then
-                        local okEntry = pcall(function()
-                            local info, keys = catalogInfoFromData(mod, data)
-                            for _, k in pairs(keys) do catalog.byKey[k] = info end
-                        end)
-                        if okEntry then n = n + 1 else errN = errN + 1 end
+                        local okEntry, info, keys = pcall(catalogInfoFromData, mod, data)
+                        if okEntry then
+                            local added = 0
+                            for _, k in pairs(keys) do
+                                catalog.byKey[k] = info
+                                added = added + 1
+                            end
+                            if verbose and tried <= 3 then
+                                log("CATALOG KEYS " .. mod.Name .. ": +" .. added .. " " .. ser(keys))
+                            end
+                            info.keys = keys
+                            catalog.entries[#catalog.entries + 1] = info
+                            n = n + 1
+                        else
+                            errN = errN + 1
+                        end
                     else
                         errN = errN + 1
                     end
