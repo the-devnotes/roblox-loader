@@ -53,20 +53,6 @@
         end
     end
 
-    local function scanTable(info, t, depth, seen)
-        if type(t) ~= "table" or depth > 4 then return end
-        seen = seen or {}
-        if seen[t] then return end
-        seen[t] = true
-        for k, v in pairs(t) do
-            if type(v) == "table" then
-                scanTable(info, v, depth + 1, seen)
-            else
-                scanKV(info, k, v)
-            end
-        end
-    end
-
     local function cleanEggName(s)
         s = tostring(s or "")
         s = s:gsub("^%s+", ""):gsub("%s+$", "")
@@ -88,8 +74,6 @@
     local function rarityFromText(txt)
         local tl = tostring(txt):lower():gsub("[%s_%-]+", "")
         if #tl > 32 then return 0 end
-        local rn = catalog and catalog.rarityNumber
-        if rn and rn[tl] then return rn[tl] end
         local best = 0
         for word, idx in pairs(RARITY_ALIAS) do
             local w = word:gsub("[%s_%-]+", "")
@@ -108,7 +92,7 @@
         local theme = m:GetAttribute("EggTheme")
 
         -- Nama asli: PetDisplayName > DisplayName (tanpa "Egg") > PetModelName.
-        -- "Egg"/"Egg #1" adalah fallback, bukan identitas untuk probe record.
+        -- "Egg"/"Egg #1" hanya fallback, bukan identitas pet.
         local function eggTitle()
             local v = cleanEggName(petDisp)
             if not genericEggName(v) then return v end
@@ -172,8 +156,6 @@
             local key = string.lower(id)
             if scannedIds[key] then return end
             scannedIds[key] = true
-            local data = snapCache[key] or snapMeta[key]
-            if data then scanTable(info, data, 0) end
             applyMeta(key)
         end
         tryId(m.Name)
@@ -294,45 +276,8 @@
             info.prog = THEME_PROG[string.lower(info.theme)] or 0
         end
 
-        -- Katalog client (ReplicatedStorage.Directory._Index) adalah sumber paling
-        -- akurat untuk rarity/value/weight. Probe Record sudah terbukti selalu nil.
-        local function applyCatalog(name)
-            if type(name) ~= "string" or name == "" then return end
-            local rawKey = string.lower(name)
-            local cmpKey = catalog.compactKey(name)
-            local e = catalog.byKey[rawKey] or catalog.byKey[cmpKey]
-            if not e then
-                for _, ent in ipairs(catalog.entries) do
-                    if ent.keys and (ent.keys[rawKey] or ent.keys[cmpKey]) then
-                        e = ent
-                        break
-                    end
-                end
-            end
-            if not e then return end
-            if info.name == "" and not genericEggName(e.name) then info.name = e.name end
-            if e.rar > info.rar then info.rar = e.rar end
-            if e.prog > info.prog then info.prog = e.prog end
-            if e.val > info.val then info.val = e.val end
-            if e.weight > info.weight then info.weight = e.weight end
-            if e.chance > info.chance then info.chance = e.chance end
-            if e.imageId and not info.imageId then info.imageId = e.imageId end
-            if e.event then info.event = true end
-        end
-        applyCatalog(info.name)
-        applyCatalog(petDisp)
-        applyCatalog(disp)
-        applyCatalog(modelName)
-        applyCatalog(theme)
-        applyCatalog(m.Name)
-
-        local nd = snapByName[tostring(info.name):lower()]
-        if not nd and disp then nd = snapByName[tostring(disp):lower()] end
-        if not nd and theme then nd = snapByName[tostring(theme):lower()] end
-        if nd then scanTable(info, nd, 0) end
-
         -- Dari atribut PetDisplayName/DisplayName kita tahu kategori egg-nya.
-        -- Simpan supaya ClaimFeedback / Probe Record bisa mengisi rarity + value.
+        -- Simpan supaya ClaimFeedback / CarryState bisa mengisi rarity.
         if eggUid and not genericEggName(info.name) and not uidCategory[eggUid] then
             uidCategory[eggUid] = string.lower(info.name)
         end
@@ -526,7 +471,7 @@
             if state.minVal > 1 and not hasVal then miss[#miss + 1] = "value" end
             if not hasAny then
                 lastDataWarn = os.clock()
-                log("Data " .. AREAS[state.area][1] .. " belum terbaca (" .. #eggs .. " egg). Ambil 1 egg dulu supaya Claim Feedback/CarryState mengisi nama + rarity, lalu Muat Ulang galeri.")
+                log("Data " .. AREAS[state.area][1] .. " belum terbaca (" .. #eggs .. " egg). Ambil 1 egg dulu supaya Claim Feedback/CarryState mengisi nama + rarity.")
             elseif #miss > 0 then
                 lastDataWarn = os.clock()
                 log("Data " .. table.concat(miss, "/") .. " tidak tersedia -> filter itu diabaikan. Pakai Min Progression.")

@@ -1,5 +1,25 @@
 # TODO / handoff cepat
 
+## v6.0 — versi ringkas (steal + rarity)
+Permintaan user: "pakek yang bisa aja kayak steal, pilih rarity, udh itu aja dulu" + konfirmasi "semua kecuali steal + rarity dihapus".
+
+Dihapus dari `src/`:
+- `40_snapshot.lua` (probe `RequestEggRecord`, snapshot remote, dump snapshot)
+- `42_catalog.lua` (pembaca `ReplicatedStorage.Directory._Index`)
+- `53_debug.lua` (debug probe + dump semua egg)
+- `65_page_egg.lua` (galeri egg + kartu 3D)
+- `68_page_info.lua` (halaman info/diagnosa)
+
+Disederhanakan:
+- `41_egg_data.lua`: buang `snapCache/snapMeta/snapByName` dan `applyCatalog`; rarity tetap dari atribut model, alias tetap, dan event `ClaimFeedback`/`CarryState`.
+- `71_loops.lua`: event hanya `AreaEggCarryState`, `AreaEggClaimFeedback`, `StealTargetEvent`; loop galeri dihapus.
+- `52_steal.lua`, `64_page_filter.lua`, `99_start.lua`, `50_base_area.lua`: buang semua panggilan ke fungsi yang dihapus.
+- `30_state.lua`: buang `catalog`, `probeDone/probeAt`, `gallery*`, `assetUidHints`, `state.probe`, `galleryRar`.
+
+Tetap ada: BFEUI, sidebar, minimize/close, floating restore, anti-double-run `Script sudah berjalan!`, halaman Utama/Steal/Auto/Filter/Area/Log, Set Base, auto area, Min Rarity, fallback ON, strict OFF, log 4000 baris (tampil 300).
+
+Build + `luac -p` OK. File dist tetap `dist/BikeForEggsMobile_v5_2.lua` (nama tidak diubah), disalin ke `BikeForEggsMobile_v5.lua`.
+
 ## v5.9e — Uid langsung + hitungan katalog
 - `AreaEggUpdated` ternyata mengirim `Uid="AreaEgg_<guid>"` pada sebagian event. Script sekarang memakai Uid itu langsung (lebih akurat daripada cocokkan posisi `BoundsCFrame`).
 - `Egg_<guid>` dari `RuntimeOwnerUpdated` tetap dipetakan langsung ke `uidCategory[guid]` + `snapCache[guid]`.

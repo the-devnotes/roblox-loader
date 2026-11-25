@@ -3,7 +3,6 @@
     local stealIdx = 0
     local lastNoEggLog = 0
     local lastPromptLog = 0
-    local lastSnapTry = -1e9
     local lastAutoAreaTry = -1e9
 
     local function nearestSmartPart()
@@ -108,7 +107,6 @@
             log("Prompt CarryAreaEgg tidak ditemukan (mungkin masih membawa egg).")
         end
 
-        galleryDirty = true
         if b then
             teleport(b)
             log("Kembali ke base" .. (baseSrc and (" (" .. tostring(baseSrc) .. ")") or "") .. ".")
@@ -135,12 +133,6 @@
 
         local e
         if state.best then
-            if os.clock() - snapAt > 6 and os.clock() - lastSnapTry > 3 then
-                lastSnapTry = os.clock()
-                if refreshSnapshot(false) then
-                    clearInfoCache()
-                end
-            end
             e = pickBest(eggs)
             if not e then return false end
             local i = e.info
@@ -156,36 +148,5 @@
         end
 
         return doSteal(e, manual)
-    end
-
-    -- Dipakai tombol Steal di kartu halaman Egg.
-    local function stealEgg(e)
-        if not e then return end
-        if busy then
-            if ui then ui:toast("Masih sibuk, tunggu sebentar.", "warn") end
-            return
-        end
-
-        -- Ambil entri terbaru supaya posisi egg tidak basi.
-        local fresh
-        for _, x in ipairs(areaEggs()) do
-            if x.m == e.m or (e.m and x.m.Name == e.m.Name) then fresh = x; break end
-        end
-        if not fresh then
-            if ui then ui:toast("Egg sudah tidak ada. Muat ulang galeri.", "warn") end
-            galleryDirty = true
-            return
-        end
-        e = fresh
-
-        busy = true
-        local i = e.info or eggInfoCached(e.m)
-        if ui then ui:toast("Mengambil " .. tostring(i.name) .. "...") end
-        task.spawn(function()
-            local ok, err = pcall(doSteal, e, true)
-            if not ok then log("ERROR steal egg: " .. tostring(err)) end
-            busy = false
-            galleryDirty = true
-        end)
     end
 

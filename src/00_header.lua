@@ -8,8 +8,9 @@
     - Tombol minimize (-) dan close (X).
     - Anti double-run: kalau script masih jalan, muncul peringatan
       "Script sudah berjalan!".
-    - Filter Best Egg diperbaiki: auto, fallback, dan aman kalau
-      game tidak menyediakan data rarity/value.
+    - Versi ringkas: fokus Auto Steal + pilih Min Rarity.
+    - Filter aman: kalau rarity belum terbaca, egg tetap bisa diambil.
+    - Tombol/eksperimen katalog, snapshot, dump egg, dan galeri dihapus.
 
     File asli TIDAK diubah. Ini file baru: BikeForEggsMobile_v5.lua
 ]]

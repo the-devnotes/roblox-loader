@@ -61,17 +61,13 @@
         best = true,
         sort = 1,
         minRar = 1, minProg = 1, minVal = 1,
-        galleryRar = 1,
-        fallback = true, strict = false, probe = true, lite = true,
+        fallback = true, strict = false, lite = true,
         stealDelay = 0.6, hatchDelay = 1.2, sellDelay = 1.2,
     }
 
     local running = true
     local ui
     local updateHome
-    local galleryDirty = true
-    local galleryRefresh = nil
-    local gallerySig = ""
     local areaAutoRef = nil
     local lastCarry = nil
     local carryEventSeen = false
@@ -83,21 +79,5 @@
     local categoryImage = {}
     local uidCategory = {}
     local uidArea = {}
-    local assetUidHints = {} -- Uid asli dari StealTargetEvent (bukan nama model AreaEgg_)
-    -- Katalog metadata dari ReplicatedStorage.Directory._Index (diisi oleh 42_catalog).
-    local catalog = {
-        at = -1e9, count = 0, err = 0, byKey = {}, entries = {}, keyCount = 0, rarRaw = nil, read = nil,
-        rarityNumber = {}, rarityLabel = {},
-        compactKey = function(s)
-            if type(s) ~= "string" then return nil end
-            local v = s:lower():gsub("^%s+", ""):gsub("%s+$", "")
-            v = v:gsub(" egg$", "")
-            v = v:gsub("[^%w]", "")
-            if v == "" then return nil end
-            return v
-        end,
-    }
-    local probeDone = {}
-    local probeAt = -1e9
     local toggleRefs = {}
 
