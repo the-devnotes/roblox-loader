@@ -1235,6 +1235,17 @@ local function boot()
         return "{" .. table.concat(parts, ", ") .. "}"
     end
 
+    -- Nama/kategori generik bukan identitas egg. Jangan dipakai sebagai kunci
+    -- uidCategory maupun argumen RequestEggRecord (dulu selalu jadi "cat:egg").
+    local function genericEggName(s)
+        if type(s) ~= "string" then return true end
+        local v = s:lower():gsub("^%s+", ""):gsub("%s+$", "")
+        if v == "" or v == "egg" or v == "eggs" or v == "telur" then return true end
+        if v:match("^egg%s*#?%s*%d*$") then return true end
+        if v:match("^telur%s*#?%s*%d*$") then return true end
+        return false
+    end
+
     local GUID_PATTERN = "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x"
     local function guidOf(s)
         if s == nil then return nil end
@@ -1261,7 +1272,7 @@ local function boot()
     -- Simpan data per kategori (AssetCategory / PetDisplayName) supaya egg tanpa
     -- atribut rarity/value/weight tetap bisa diisi dari snapshot / record server.
     local function applyCategoryMeta(cat, v)
-        if type(cat) ~= "string" or cat == "" or type(v) ~= "table" then return end
+        if type(cat) ~= "string" or cat == "" or genericEggName(cat) or type(v) ~= "table" then return end
         local key = string.lower(cat)
 
         local pr = tonumber(v.ProgressionOrder or v.OriginalImportNumber)
@@ -1317,11 +1328,13 @@ local function boot()
                 if uid then
                     snapMeta[uid] = v
                     local cat = v.AssetCategory or v.Category or v.PetDisplayName or v.DisplayName
-                    if type(cat) == "string" and cat ~= "" then uidCategory[uid] = string.lower(cat) end
+                    if type(cat) == "string" and cat ~= "" and not genericEggName(cat) then
+                        uidCategory[uid] = string.lower(cat)
+                    end
                     local aid = v.AreaId or v.Area
                     if type(aid) == "string" then uidArea[uid] = aid end
                     local pr = tonumber(v.ProgressionOrder or v.OriginalImportNumber)
-                    if pr and cat then categoryProg[string.lower(cat)] = pr end
+                    if pr and cat and not genericEggName(cat) then categoryProg[string.lower(cat)] = pr end
                 end
                 indexSnapshot(v, (depth or 0) + 1, seen)
             end
@@ -1330,6 +1343,22 @@ local function boot()
 
     local snapEventConn = nil
     local unpackArgs = table.unpack or unpack
+    local snapLogAt = -1e9
+
+    local function argSig(args)
+        local parts = {}
+        for _, a in ipairs(args) do
+            parts[#parts + 1] = type(a) == "table" and ("(" .. ser(a) .. ")") or tostring(a)
+        end
+        return table.concat(parts, "|")
+    end
+
+    local function noteSnap(msg, verbose)
+        if verbose or os.clock() - snapLogAt > 30 then
+            snapLogAt = os.clock()
+            log(msg)
+        end
+    end
 
     local function snapCount()
         local n = 0
@@ -1366,11 +1395,15 @@ local function boot()
         end
 
         local before = snapCount()
+        local areaName = AREAS[state.area][1]
         local attempts = {
             {},
             { state.area },
-            { AREAS[state.area][1] },
-            { state.area, AREAS[state.area][1] },
+            { areaName },
+            { { AreaId = areaName } },
+            { { Area = areaName } },
+            { { areaId = areaName } },
+            { state.area, areaName },
         }
         local gotResult = false
         local lastErr, lastRes
@@ -1384,6 +1417,7 @@ local function boot()
                     lastRes = res
                 end
                 indexSnapshot(res, 0)
+                noteSnap("SNAPSHOT RAW (" .. argSig(args) .. "): " .. ser(res):sub(1, 900), verbose)
                 if snapCount() > before then break end
                 if before > 0 and type(res) == "table" and next(res) ~= nil then break end
             else
@@ -1415,15 +1449,20 @@ local function boot()
             return false
         end
         local before = snapCount()
-        local attempts = { {}, { state.area } }
+        local areaName = AREAS[state.area][1]
+        local attempts = {
+            {},
+            { state.area },
+            { areaName },
+            { { AreaId = areaName } },
+            { { Area = areaName } },
+        }
         for _, args in ipairs(attempts) do
             local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
             if ok and res then
                 indexSnapshot(res, 0)
-                if verbose then
-                    log("Runtime snapshot: +" .. (snapCount() - before) .. " entri baru.")
-                    log("RUNTIME RAW: " .. ser(res):sub(1, 900))
-                end
+                noteSnap("RUNTIME RAW (" .. argSig(args) .. "): +" .. (snapCount() - before)
+                    .. " entri | " .. ser(res):sub(1, 900), verbose)
                 return true
             end
         end
@@ -1431,9 +1470,19 @@ local function boot()
     end
 
     -- Probe RequestEggRecord untuk satu egg/kategori. Di-cache supaya tidak spam server.
+    -- UID diprioritaskan: dulu kuncinya "cat:egg" karena nama fallback, jadi argumen
+    -- Uid tidak pernah terlihat di log.
+    local recordLogAt, recordTryAuto, recordTryVerbose = -1e9, false, false
+    local function noteRecord(msg, verbose)
+        if verbose or os.clock() - recordLogAt > 25 then
+            recordLogAt = os.clock()
+            log(msg)
+        end
+    end
+
     local function probeRecord(uid, cat, areaName, verbose, fullUid)
-        if not uid and not cat and not fullUid then return nil end
-        local key = cat and ("cat:" .. string.lower(cat)) or ("uid:" .. tostring(fullUid or uid))
+        local realUid = fullUid or (uid and ("AreaEgg_" .. uid) or nil)
+        local key = "uid:" .. tostring(realUid or uid or cat or "-")
         if probeDone[key] and not verbose then return nil end
         probeDone[key] = true
 
@@ -1443,9 +1492,9 @@ local function boot()
             return nil
         end
 
-        -- Server memakai Uid penuh "AreaEgg_<guid>", bukan guid saja.
+        -- Coba Uid penuh "AreaEgg_<guid>", guid saja, dan bentuk table.
         local ids = {}
-        if fullUid then ids[#ids + 1] = fullUid end
+        if realUid then ids[#ids + 1] = realUid end
         if uid then
             ids[#ids + 1] = "AreaEgg_" .. uid
             ids[#ids + 1] = uid
@@ -1454,31 +1503,40 @@ local function boot()
         local attempts = {}
         for _, id in ipairs(ids) do
             attempts[#attempts + 1] = { id }
+            attempts[#attempts + 1] = { { Uid = id } }
+            attempts[#attempts + 1] = { { uid = id } }
             if areaName then attempts[#attempts + 1] = { areaName, id } end
             attempts[#attempts + 1] = { state.area, id }
         end
-        if cat then
+        attempts[#attempts + 1] = {}
+        if cat and not genericEggName(cat) then
             attempts[#attempts + 1] = { cat }
             if areaName then attempts[#attempts + 1] = { areaName, cat } end
-            attempts[#attempts + 1] = { state.area, cat }
         end
 
-        local seen = {}
+        local sigs = {}
         for _, args in ipairs(attempts) do
-            local sig = table.concat(args, "|")
-            if not seen[sig] then
-                seen[sig] = true
+            local sig = argSig(args)
+            if not sigs[sig] then
+                sigs[sig] = true
                 local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
                 if ok and res ~= nil then
                     if type(res) == "table" then indexSnapshot(res, 0) end
-                    local gotCat = cat or (type(res) == "table" and (res.AssetCategory or res.DisplayName or res.Category))
+                    local gotCat = (type(res) == "table" and (res.AssetCategory or res.PetDisplayName
+                        or res.DisplayName or res.Category)) or cat
                     applyCategoryMeta(gotCat, res)
-                    if verbose then log("RECORD " .. sig .. ": " .. ser(res):sub(1, 700)) end
+                    noteRecord("RECORD " .. sig .. ": " .. ser(res):sub(1, 700), verbose)
                     if type(res) == "table" and next(res) ~= nil then return res end
                 end
             end
         end
-        if verbose then log("RECORD tidak ada untuk " .. tostring(key)) end
+        if (verbose and not recordTryVerbose) or (not verbose and not recordTryAuto) then
+            if verbose then recordTryVerbose = true else recordTryAuto = true end
+            local list = {}
+            for s in pairs(sigs) do list[#list + 1] = s end
+            noteRecord("RECORD coba " .. key .. ": " .. table.concat(list, " | "), verbose)
+        end
+        if verbose then log("RECORD tidak ada untuk " .. key) end
         return nil
     end
 
@@ -1594,10 +1652,25 @@ local function boot()
 
     local function eggInfo(m)
         local themedAttr = m:GetAttribute("OurThemedEgg")
+        local petDisp = m:GetAttribute("PetDisplayName")
         local disp = m:GetAttribute("DisplayName")
+        local modelName = m:GetAttribute("PetModelName")
         local theme = m:GetAttribute("EggTheme")
+
+        -- Nama asli: PetDisplayName > DisplayName (tanpa "Egg") > PetModelName.
+        -- "Egg"/"Egg #1" adalah fallback, bukan identitas untuk probe record.
+        local function eggTitle()
+            local v = cleanEggName(petDisp)
+            if not genericEggName(v) then return v end
+            v = cleanEggName(disp):gsub("%s*[Ee]gg%s*$", ""):gsub("^%s+", ""):gsub("%s+$", "")
+            if not genericEggName(v) then return v end
+            v = cleanEggName(modelName)
+            if not genericEggName(v) then return v end
+            return ""
+        end
+
         local info = {
-            name = cleanEggName(disp),
+            name = eggTitle(),
             theme = theme,
             prog = tonumber(m:GetAttribute("ProgressionOrder")) or 0,
             themed = truthy(themedAttr),
@@ -1750,9 +1823,9 @@ local function boot()
         end
 
         if bestName then info.name = bestName end
-        if info.name == "" then
+        if genericEggName(info.name) then
             local th = cleanEggName(theme)
-            if th ~= "" then info.name = th end
+            if not genericEggName(th) then info.name = th end
         end
         if info.name == "" then
             info.name = "Egg" .. (info.prog > 0 and (" #" .. tostring(info.prog)) or "")
@@ -1775,7 +1848,7 @@ local function boot()
 
         -- Dari atribut PetDisplayName/DisplayName kita tahu kategori egg-nya.
         -- Simpan supaya ClaimFeedback / Probe Record bisa mengisi rarity + value.
-        if eggUid and info.name ~= "" and not uidCategory[eggUid] then
+        if eggUid and not genericEggName(info.name) and not uidCategory[eggUid] then
             uidCategory[eggUid] = string.lower(info.name)
         end
         if eggUid then applyMeta(eggUid) end
@@ -2431,27 +2504,26 @@ local function boot()
     --[[ ===================== 12b. DEBUG DATA (SEMUA AREA) ===================== ]]
     local function debugCategoryOf(e, i)
         if not e then return nil end
+        local function use(v)
+            if type(v) ~= "string" or genericEggName(v) then return nil end
+            v = v:gsub("%s*[Ee]gg%s*$", ""):gsub("^%s+", ""):gsub("%s+$", "")
+            if genericEggName(v) then return nil end
+            return string.lower(v)
+        end
         local m = e.m
         if m then
-            -- PetDisplayName adalah kategori asli (Embercrest, Grizzlite, ...).
-            -- Prioritaskan ini, jangan kalah oleh fallback name "Egg".
-            local pet = m:GetAttribute("PetDisplayName")
-            if type(pet) == "string" and pet ~= "" and pet ~= "Egg" then return string.lower(pet) end
-            local disp = m:GetAttribute("DisplayName")
-            if type(disp) == "string" and disp ~= "" then
-                local clean = disp:gsub("%s*[Ee]gg%s*$", "")
-                clean = clean:gsub("^%s+", ""):gsub("%s+$", "")
-                if clean ~= "" and clean ~= "Egg" then return string.lower(clean) end
-            end
-            local model = m:GetAttribute("PetModelName")
-            if type(model) == "string" and model ~= "" then return string.lower(model) end
+            -- Kategori asli: PetDisplayName > DisplayName > PetModelName > EggTheme.
+            -- "Egg"/"Egg #n" dibuang supaya probe tidak berubah jadi "cat:egg".
+            local c = use(m:GetAttribute("PetDisplayName"))
+                or use(m:GetAttribute("DisplayName"))
+                or use(m:GetAttribute("PetModelName"))
+                or use(m:GetAttribute("EggTheme"))
+            if c then return c end
         end
-        if e.uid and uidCategory[e.uid] then return uidCategory[e.uid] end
-        local n = i and i.name
-        if n and n ~= "" and not n:find("Egg #", 1, true) and n ~= "Egg" and n ~= "egg" then
-            return string.lower(n)
+        if e.uid and uidCategory[e.uid] and not genericEggName(uidCategory[e.uid]) then
+            return uidCategory[e.uid]
         end
-        return nil
+        return use(i and i.name)
     end
 
     -- Probe RequestEggRecord untuk semua area. Dipanggil otomatis (terbatas) atau manual dari tombol.
@@ -2473,7 +2545,7 @@ local function boot()
             local i = e.info or eggInfoCached(e.m)
             local uid = e.uid
             local cat = debugCategoryOf(e, i)
-            if cat and uid then uidCategory[uid] = cat end
+            if cat and uid and not genericEggName(cat) then uidCategory[uid] = cat end
             local ai = eggAreaIndex(e)
             local areaName = (AREAS[ai] and AREAS[ai][1]) or AREAS[state.area][1]
             if probeRecord(uid, cat, areaName, verbose, e.m and e.m.Name or nil) then found = found + 1 end
@@ -3152,7 +3224,7 @@ local function boot()
     local pgInfo = ui:page("info", "Info", "ℹ️")
     pgInfo:section("Tentang")
     pgInfo:card({
-        {"Versi", "v5.6"},
+        {"Versi", "v5.7"},
         {"UI", "BFEUI (embedded)"},
         {"Player", lp.Name},
         {"Executor", executorName},

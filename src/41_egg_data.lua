@@ -99,10 +99,25 @@
 
     local function eggInfo(m)
         local themedAttr = m:GetAttribute("OurThemedEgg")
+        local petDisp = m:GetAttribute("PetDisplayName")
         local disp = m:GetAttribute("DisplayName")
+        local modelName = m:GetAttribute("PetModelName")
         local theme = m:GetAttribute("EggTheme")
+
+        -- Nama asli: PetDisplayName > DisplayName (tanpa "Egg") > PetModelName.
+        -- "Egg"/"Egg #1" adalah fallback, bukan identitas untuk probe record.
+        local function eggTitle()
+            local v = cleanEggName(petDisp)
+            if not genericEggName(v) then return v end
+            v = cleanEggName(disp):gsub("%s*[Ee]gg%s*$", ""):gsub("^%s+", ""):gsub("%s+$", "")
+            if not genericEggName(v) then return v end
+            v = cleanEggName(modelName)
+            if not genericEggName(v) then return v end
+            return ""
+        end
+
         local info = {
-            name = cleanEggName(disp),
+            name = eggTitle(),
             theme = theme,
             prog = tonumber(m:GetAttribute("ProgressionOrder")) or 0,
             themed = truthy(themedAttr),
@@ -255,9 +270,9 @@
         end
 
         if bestName then info.name = bestName end
-        if info.name == "" then
+        if genericEggName(info.name) then
             local th = cleanEggName(theme)
-            if th ~= "" then info.name = th end
+            if not genericEggName(th) then info.name = th end
         end
         if info.name == "" then
             info.name = "Egg" .. (info.prog > 0 and (" #" .. tostring(info.prog)) or "")
@@ -280,7 +295,7 @@
 
         -- Dari atribut PetDisplayName/DisplayName kita tahu kategori egg-nya.
         -- Simpan supaya ClaimFeedback / Probe Record bisa mengisi rarity + value.
-        if eggUid and info.name ~= "" and not uidCategory[eggUid] then
+        if eggUid and not genericEggName(info.name) and not uidCategory[eggUid] then
             uidCategory[eggUid] = string.lower(info.name)
         end
         if eggUid then applyMeta(eggUid) end

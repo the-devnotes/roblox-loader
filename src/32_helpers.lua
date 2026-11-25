@@ -101,6 +101,17 @@
         return "{" .. table.concat(parts, ", ") .. "}"
     end
 
+    -- Nama/kategori generik bukan identitas egg. Jangan dipakai sebagai kunci
+    -- uidCategory maupun argumen RequestEggRecord (dulu selalu jadi "cat:egg").
+    local function genericEggName(s)
+        if type(s) ~= "string" then return true end
+        local v = s:lower():gsub("^%s+", ""):gsub("%s+$", "")
+        if v == "" or v == "egg" or v == "eggs" or v == "telur" then return true end
+        if v:match("^egg%s*#?%s*%d*$") then return true end
+        if v:match("^telur%s*#?%s*%d*$") then return true end
+        return false
+    end
+
     local GUID_PATTERN = "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x"
     local function guidOf(s)
         if s == nil then return nil end

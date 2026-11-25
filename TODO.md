@@ -1,5 +1,12 @@
 # TODO / handoff cepat
 
+## v5.7 — probe & identitas egg
+- Log API dumper tidak berisi argumen pemanggilan remote: `_lemonadeUniqueId` pada semua instance adalah marker alat dump, bukan argumen game. Jadi format argumen masih harus dilihat dari log `RECORD ...` / `SNAPSHOT RAW ...` di game.
+- `Egg`/`egg`/`Egg #n` sekarang dianggap nama generik (`genericEggName()` di `32_helpers.lua`). Tidak disimpan ke `uidCategory`, tidak dipakai sebagai kategori probe. Probe sekarang UID-first (`uid:AreaEgg_<guid>`), bukan `cat:egg`.
+- `eggInfo()` mengambil nama dari `PetDisplayName` > `DisplayName` (buang suffix "Egg") > `PetModelName` > `EggTheme`.
+- `probeRecord()` mencoba argumen string Uid, table `{Uid=...}` / `{uid=...}`, `(area, uid)`, tanpa argumen, dan kategori hanya kalau tidak generik. Log `RECORD coba ...` + `RECORD <args>: <raw>` keluar walaupun auto probe (dithrottle 25 detik).
+- `RequestAreaEggSnapshot` / `RequestRuntimeSnapshot` diberi variasi argumen `{AreaId=...}`, `{Area=...}`, `{areaId=...}` dan log `SNAPSHOT RAW (...)` / `RUNTIME RAW (...)` (dithrottle 30 detik) untuk melacak kenapa `cache=1`.
+
 ## v5.6 — perbaikan dari log user
 - `attempt to call a nil value` di mode Best: `applyCategoryMeta()` (file 40) memanggil `rarityOf()` yang dulu didefinisikan di file 41. Di Luau, local yang dibuat belakangan tidak terlihat dari fungsi sebelumnya, jadi jadi global nil. `rarityOf()` sekarang pindah ke `32_helpers.lua` (sebelum snapshot).
 - `RequestEggRecord` sebelumnya dikirimi guid saja; server butuh Uid penuh `AreaEgg_<guid>`. Probe sekarang mencoba `m.Name`, `"AreaEgg_"..uid`, dan guid, dengan/tanpa area.

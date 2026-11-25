@@ -1,27 +1,26 @@
     --[[ ===================== 12b. DEBUG DATA (SEMUA AREA) ===================== ]]
     local function debugCategoryOf(e, i)
         if not e then return nil end
+        local function use(v)
+            if type(v) ~= "string" or genericEggName(v) then return nil end
+            v = v:gsub("%s*[Ee]gg%s*$", ""):gsub("^%s+", ""):gsub("%s+$", "")
+            if genericEggName(v) then return nil end
+            return string.lower(v)
+        end
         local m = e.m
         if m then
-            -- PetDisplayName adalah kategori asli (Embercrest, Grizzlite, ...).
-            -- Prioritaskan ini, jangan kalah oleh fallback name "Egg".
-            local pet = m:GetAttribute("PetDisplayName")
-            if type(pet) == "string" and pet ~= "" and pet ~= "Egg" then return string.lower(pet) end
-            local disp = m:GetAttribute("DisplayName")
-            if type(disp) == "string" and disp ~= "" then
-                local clean = disp:gsub("%s*[Ee]gg%s*$", "")
-                clean = clean:gsub("^%s+", ""):gsub("%s+$", "")
-                if clean ~= "" and clean ~= "Egg" then return string.lower(clean) end
-            end
-            local model = m:GetAttribute("PetModelName")
-            if type(model) == "string" and model ~= "" then return string.lower(model) end
+            -- Kategori asli: PetDisplayName > DisplayName > PetModelName > EggTheme.
+            -- "Egg"/"Egg #n" dibuang supaya probe tidak berubah jadi "cat:egg".
+            local c = use(m:GetAttribute("PetDisplayName"))
+                or use(m:GetAttribute("DisplayName"))
+                or use(m:GetAttribute("PetModelName"))
+                or use(m:GetAttribute("EggTheme"))
+            if c then return c end
         end
-        if e.uid and uidCategory[e.uid] then return uidCategory[e.uid] end
-        local n = i and i.name
-        if n and n ~= "" and not n:find("Egg #", 1, true) and n ~= "Egg" and n ~= "egg" then
-            return string.lower(n)
+        if e.uid and uidCategory[e.uid] and not genericEggName(uidCategory[e.uid]) then
+            return uidCategory[e.uid]
         end
-        return nil
+        return use(i and i.name)
     end
 
     -- Probe RequestEggRecord untuk semua area. Dipanggil otomatis (terbatas) atau manual dari tombol.
@@ -43,7 +42,7 @@
             local i = e.info or eggInfoCached(e.m)
             local uid = e.uid
             local cat = debugCategoryOf(e, i)
-            if cat and uid then uidCategory[uid] = cat end
+            if cat and uid and not genericEggName(cat) then uidCategory[uid] = cat end
             local ai = eggAreaIndex(e)
             local areaName = (AREAS[ai] and AREAS[ai][1]) or AREAS[state.area][1]
             if probeRecord(uid, cat, areaName, verbose, e.m and e.m.Name or nil) then found = found + 1 end
