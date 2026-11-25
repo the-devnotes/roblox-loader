@@ -200,6 +200,8 @@
         for _, remoteName in ipairs({
             "Eggs: RequestRuntimeSnapshot",
             "ActiveAssets: RequestRuntimeSnapshot",
+            "ActiveAssets: RequestStealTarget",
+            "Eggs: RequestAreaEggRareSpawnPresentations",
         }) do
             local rf = netRemote(remoteName)
             if rf and rf:IsA("RemoteFunction") then

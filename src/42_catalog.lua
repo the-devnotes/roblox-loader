@@ -109,16 +109,48 @@
         end
 
         local function readRarityModule(verbose)
-            if not verbose then return end
             local dir = catalogDir()
             local mod = dir and dir:FindFirstChild("Rarity", true)
             if not mod or not mod:IsA("ModuleScript") then
-                log("Katalog rarity: module tidak ada.")
+                if verbose then log("Katalog rarity: module tidak ada.") end
                 return
             end
             local ok, data = safeRequireModule(mod)
             catalog.rarRaw = ok and data or nil
-            log("RARITY MODULE: " .. (ok and ser(data):sub(1, 1200) or tostring(data)))
+            if verbose then
+                log("RARITY MODULE: " .. (ok and ser(data):sub(1, 1200) or tostring(data)))
+            end
+            if not ok or type(data) ~= "table" then return end
+
+            -- RarityNumber dari game adalah urutan resmi. Pakai itu, bukan tebakan
+            -- common/uncommon/rare yang sebelumnya dipakai script.
+            local rarities = data.Rarities
+            if type(rarities) ~= "table" then return end
+            catalog.rarityNumber = {}
+            local maxNum = 0
+            for k, v in pairs(rarities) do
+                if type(v) == "table" then
+                    local num = tonumber(v.RarityNumber)
+                    if num and num > 0 then
+                        local label = tostring(v.DisplayName or v._id or k)
+                        catalog.rarityNumber[string.lower(k)] = num
+                        catalog.rarityNumber[catalog.compactKey(k)] = num
+                        catalog.rarityNumber[string.lower(label)] = num
+                        catalog.rarityNumber[catalog.compactKey(label)] = num
+                        catalog.rarityLabel[num] = label
+                        if num > maxNum then maxNum = num end
+                    end
+                end
+            end
+            for i = #RARITY + 1, maxNum do
+                RARITY[i] = "tier" .. i
+                RARITY_COLOR[i] = RARITY_COLOR[#RARITY_COLOR] or Color3.fromRGB(255, 255, 255)
+                RARITY_LABEL[i] = catalog.rarityLabel[i] or ("Tier " .. i)
+                RARITY_NAMES[i] = (catalog.rarityLabel[i] or ("Tier " .. i)) .. "+"
+            end
+            if verbose then
+                log("RARITY NUMBER: " .. maxNum .. " tier terdaftar.")
+            end
         end
 
         local function applyCatalogToMaps()
@@ -132,7 +164,7 @@
             end
         end
 
-        catalog.read = function(verbose)
+        local function doReadCatalog(verbose)
             if not verbose and catalog.count > 0 and os.clock() - catalog.at < 45 then
                 return catalog.count
             end
@@ -145,21 +177,32 @@
                 return 0
             end
 
-            local n, errN = 0, 0
+            local n, errN, tried = 0, 0, 0
             catalog.byKey = {}
-            readRarityModule(verbose)
-            n = n + readCatalogTables(verbose)
+            local okRarity, errRarity = pcall(readRarityModule, verbose)
+            if not okRarity and verbose then log("RARITY error: " .. tostring(errRarity)) end
+
+            local okTables, resTables = pcall(readCatalogTables, verbose)
+            if okTables then
+                n = n + resTables
+            elseif verbose then
+                log("CATALOG TABLE error: " .. tostring(resTables))
+            end
 
             for _, mod in ipairs(idx:GetChildren()) do
                 if mod:IsA("ModuleScript") then
+                    tried = tried + 1
                     local ok, data = safeRequireModule(mod)
+                    if verbose and tried <= 3 then
+                        log("CATALOG " .. mod.Name .. " [" .. tostring(ok) .. "]: "
+                            .. (ok and ser(data):sub(1, 700) or tostring(data)))
+                    end
                     if ok and type(data) == "table" then
-                        local info, keys = catalogInfoFromData(mod, data)
-                        for _, k in pairs(keys) do catalog.byKey[k] = info end
-                        n = n + 1
-                        if verbose and n <= 3 then
-                            log("CATALOG " .. mod.Name .. ": " .. ser(data):sub(1, 700))
-                        end
+                        local okEntry = pcall(function()
+                            local info, keys = catalogInfoFromData(mod, data)
+                            for _, k in pairs(keys) do catalog.byKey[k] = info end
+                        end)
+                        if okEntry then n = n + 1 else errN = errN + 1 end
                     else
                         errN = errN + 1
                     end
@@ -176,8 +219,18 @@
             if verbose then
                 local keyCount = 0
                 for _ in pairs(catalog.byKey) do keyCount = keyCount + 1 end
-                log(string.format("Katalog dibaca: %d modul, %d gagal, %d kunci.", n, errN, keyCount))
+                log(string.format("Katalog dibaca: %d modul, %d gagal dari %d dicoba, %d kunci.",
+                    n, errN, tried, keyCount))
             end
             return n
+        end
+
+        catalog.read = function(verbose)
+            local ok, res = pcall(doReadCatalog, verbose)
+            if not ok then
+                log("Katalog error: " .. tostring(res))
+                return 0
+            end
+            return res
         end
     end

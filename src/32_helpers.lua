@@ -55,6 +55,10 @@
         if type(value) ~= "string" then return 0 end
         local s = value:lower():gsub("[%s_%-]+", "")
         if s == "" then return 0 end
+        -- Urutan RarityNumber dari modul game diprioritaskan (Exclusive=7,
+        -- BrainrotGod=6, dll.) sebelum alias statis.
+        local rn = catalog and catalog.rarityNumber
+        if rn and rn[s] then return rn[s] end
         local best = 0
         for word, idx in pairs(RARITY_ALIAS) do
             local w = word:gsub("[%s_%-]+", "")

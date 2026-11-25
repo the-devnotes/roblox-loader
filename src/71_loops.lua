@@ -97,6 +97,10 @@
         for _, name in ipairs({
             "Eggs: AreaEggCarryState",
             "Eggs: AreaEggClaimFeedback",
+            "Eggs: AreaEggUpdated",
+            "Eggs: AreaEggBatchUpdated",
+            "Eggs: RuntimeOwnerUpdated",
+            "ActiveAssets: RuntimeOwnerUpdated",
             "ActiveAssets: StealTargetEvent",
         }) do
             local re = net:FindFirstChild(name, true)

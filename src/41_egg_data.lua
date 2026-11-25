@@ -88,6 +88,8 @@
     local function rarityFromText(txt)
         local tl = tostring(txt):lower():gsub("[%s_%-]+", "")
         if #tl > 32 then return 0 end
+        local rn = catalog and catalog.rarityNumber
+        if rn and rn[tl] then return rn[tl] end
         local best = 0
         for word, idx in pairs(RARITY_ALIAS) do
             local w = word:gsub("[%s_%-]+", "")

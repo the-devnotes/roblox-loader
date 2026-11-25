@@ -87,6 +87,7 @@
     -- Katalog metadata dari ReplicatedStorage.Directory._Index (diisi oleh 42_catalog).
     local catalog = {
         at = -1e9, count = 0, err = 0, byKey = {}, rarRaw = nil, read = nil,
+        rarityNumber = {}, rarityLabel = {},
         compactKey = function(s)
             if type(s) ~= "string" then return nil end
             local v = s:lower():gsub("^%s+", ""):gsub("%s+$", "")
