@@ -10,12 +10,15 @@ Folder ini siap dipush ke GitHub. Script asli di `../Lainnya/BikeForEggsMobile_v
 3. Paste ke satu `LocalScript` (misal di `StarterPlayerScripts`).
 4. Jalankan. Script ini **standalone**: BFEUI sudah ditanam, tidak butuh `HttpGet` / module luar.
 
-### Opsi B — load dari GitHub raw
-1. Push folder ini ke GitHub.
-2. `loader.lua` sudah diisi untuk `danu-dev/roblox` branch `main` (ganti kalau kamu fork).
-3. Paste `loader.lua` ke `LocalScript`.
+### Opsi B — load lewat URL (GitHub raw / Netlify)
+1. `loader.lua` sekarang punya UI biru + hitam, ikon digambar (tanpa emoji).
+2. Paste `loader.lua` ke `LocalScript`.
+3. Pilih sumber:
+   - **GitHub raw**: default sudah terisi `danu-dev/roblox` branch `main`. Repo harus PUBLIC.
+   - **Netlify**: upload `dist/BikeForEggsMobile_v5_2.lua` ke folder deploy, lalu isi `NETLIFY_URL` di `loader.lua`, misalnya `https://nama-site.netlify.app/dist/BikeForEggsMobile_v5_2.lua`.
+4. Logo: upload `logo.jpg` ke Roblox lalu isi `LOGO_ID`. Kalau kosong, loader menggambar ikon telur biru.
 
-Penting: `raw.githubusercontent.com` **hanya bisa diakses kalau repo PUBLIC**. Kalau repo masih private, raw URL balas `404: Not Found` dan loader akan kasih warning. Selain itu, kalau `loadstring` tidak tersedia di environment-mu, pakai Opsi A. Opsi A selalu paling aman karena tidak bergantung GitHub sama sekali.
+Urutan ambil loader: Netlify (kalau diisi) → GitHub raw → gist cadangan. Kalau `loadstring` tidak tersedia di environment-mu, pakai Opsi A. Opsi A selalu paling aman karena tidak bergantung URL sama sekali.
 
 ## Strukturfolder
 

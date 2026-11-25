@@ -1,5 +1,13 @@
 # TODO / handoff cepat
 
+## Loader v6 — UI biru/hitam + Netlify
+- `loader.lua` ditulis ulang jadi LocalScript dengan ScreenGui `BFE_Loader_v6`: latar hitam, aksen biru, kartu melingkar, bar progres, status, tombol `Coba Lagi` dan `Salin Info`.
+- Ikon: titik status dan ikon telur digambar pakai `Frame` + `UICorner`. Tidak ada emoji di loader.
+- `LOGO_ID`: kalau diisi dengan Asset ID `logo.jpg` yang sudah di-upload, loader menampilkan gambar tersebut. Kalau kosong, ikon telur biru dipakai.
+- `NETLIFY_URL`: kalau diisi, dipakai sebagai sumber utama. Urutan fetch: Netlify → GitHub raw → gist cadangan.
+- Netlify bisa dipakai asal file `.lua` ikut ter-deploy dan site/public accessible. CORS bukan masalah untuk `HttpGet`/`GetAsync`.
+- `luac -p loader.lua` OK.
+
 ## v6.1 — penamaan UI
 Permintaan user: jangan terdengar "AI banget"/jargon ganda; pakai deskripsi yang sesuai fitur.
 
