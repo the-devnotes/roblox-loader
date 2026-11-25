@@ -1,3 +1,4 @@
+-- [LocalScript] | Lokasi: StarterPlayer > StarterPlayerScripts (paste sebagai LocalScript)
 --[[
     Bike For Eggs - Mobile UI v5 (Sidebar Edition)
     ------------------------------------------------------------
