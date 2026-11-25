@@ -14,7 +14,7 @@
             "Area: " .. AREAS[state.area][1] .. (state.allAreas and " + semua" or ""),
             "Steal: " .. tostring(state.steal) .. " | Best: " .. tostring(state.best) .. " | Sort: " .. SORTS[state.sort],
             "Filter: rar=" .. RARITY_NAMES[state.minRar] .. " prog=" .. PROG_NAMES[state.minProg] .. " val=" .. VALUE_NAMES[state.minVal],
-            "Fallback: " .. tostring(state.fallback) .. " | Strict: " .. tostring(state.strict),
+            "Fallback: " .. tostring(state.fallback) .. " | Strict: " .. tostring(state.strict) .. " | Lite: " .. tostring(state.lite),
             "Base: " .. (b and (tostring(src) .. " @ " .. math.floor(b.X) .. "," .. math.floor(b.Z)) or "belum"),
             "Egg di area: " .. tostring(#areaEggs()),
         }, "\n")
@@ -29,7 +29,7 @@
     local pgInfo = ui:page("info", "Info", "ℹ️")
     pgInfo:section("Tentang")
     pgInfo:card({
-        {"Versi", "v5.3"},
+        {"Versi", "v5.5"},
         {"UI", "BFEUI (embedded)"},
         {"Player", lp.Name},
         {"Executor", executorName},
@@ -40,6 +40,15 @@
 
     pgInfo:section("Cara Pakai")
     pgInfo:note("1) Halaman Area: pilih area lalu Set Base. 2) Halaman Filter: atur urutan & filter Best Egg. 3) Halaman Steal: aktifkan Auto Steal. 4) Halaman Auto: aktifkan Hatch/Sell kalau perlu.")
+
+    pgInfo:section("Performa")
+    local liteToggle = pgInfo:toggle("Mode Ringan (4 kartu)", state.lite, function(v)
+        setFlag("lite", v)
+        galleryDirty = true
+        gallerySig = ""
+    end)
+    bind("lite", liteToggle)
+    pgInfo:note("Mode Ringan mengurangi kartu preview 3D dari 8 ke 4. Scan prompt dan data egg juga di-cache, jadi tidak mengulang GetDescendants tiap loop.")
 
     pgInfo:section("Kontrol")
     pgInfo:buttonRow({

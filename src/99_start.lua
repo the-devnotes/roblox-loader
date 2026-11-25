@@ -6,14 +6,23 @@
     updateHome()
 
     task.spawn(function()
-        task.wait(0.5)
-        if running and refreshSnapshot(false) then
-            infoCache = setmetatable({}, { __mode = "k" })
-            galleryDirty = true
-            gallerySig = ""
-            if state.autoArea then pcall(pickBestArea, false) end
-            if galleryRefresh then pcall(galleryRefresh, true) end
-            if ui.current == "home" and updateHome then updateHome() end
+        -- Beri game waktu selesai spawn sebelum kerja berat (snapshot/scan).
+        task.wait(1.2)
+        if not running or not refreshSnapshot(false) then return end
+        clearInfoCache()
+        galleryDirty = true
+        gallerySig = ""
+        if state.autoArea then pcall(pickBestArea, false) end
+        if ui.current == "home" and updateHome then updateHome() end
+
+        -- Probe debug ditunda supaya tidak bersamaan dengan snapshot + UI awal.
+        if state.probe then
+            task.spawn(function()
+                task.wait(5)
+                if not running then return end
+                pcall(debugProbeAll, false)
+                if ui.current == "home" and updateHome then updateHome() end
+            end)
         end
     end)
 end

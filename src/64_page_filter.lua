@@ -3,7 +3,7 @@
         task.spawn(function()
             if os.clock() - snapAt > 4 then
                 if refreshSnapshot(false) then
-                    infoCache = setmetatable({}, { __mode = "k" })
+                    clearInfoCache()
                 end
             end
             local eggs = areaEggs()

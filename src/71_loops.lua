@@ -154,7 +154,7 @@
                         end
                     end
                     if changed then
-                        infoCache = setmetatable({}, { __mode = "k" })
+                        clearInfoCache()
                         galleryDirty = true
                         gallerySig = ""
                     end

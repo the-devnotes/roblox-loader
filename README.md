@@ -66,4 +66,8 @@ sh build.sh
 - Auto pilih area terbaik: sudah terbukti jalan di log user (`Forest -> Crystal Canyon`).
 - Steal + konfirmasi `AreaEggCarryState`: sudah terbukti jalan (`Grizzlite @ Crystal Canyon`).
 - v5.3: setelah prompt steal, karakter **langsung teleport ke base** dulu, baru menunggu konfirmasi — penjaga tidak sempat mengambil egg walaupun targetnya di paling belakang.
-- Belum selesai: rarity/value/weight masih `0` untuk egg yang belum pernah di-claim. Lihat `TODO.md`.
+- v5.4: debug data aktif untuk **semua area** — `RequestRuntimeSnapshot` + `RequestEggRecord` diprobe otomatis (terbatas) dan bisa dipicu manual dari halaman Egg.
+- Kartu egg tidak lagi memakai `?` kalau rarity belum ada; memakai `-`.
+- Tombol debug: **Probe Record (semua area)**, **Dump Semua Egg**, **Dump 1 Egg**, dan toggle **Auto Probe Record**.
+- v5.5 (optimasi masuk game): satu `workspace:GetDescendants()` untuk hatch/sell + smart prompt, cache model egg, kartu galeri dibuat hanya saat halaman Egg dibuka, probe debug ditunda 5 detik, dan toggle **Mode Ringan (4 kartu)** di halaman Info.
+- Lihat `TODO.md` kalau sebagian rarity/value/weight tetap kosong.

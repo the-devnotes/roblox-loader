@@ -101,7 +101,9 @@
         gallerySig = ""
         if not silent then log("Area dipilih: " .. AREAS[i][1]) end
         if updateHome then updateHome() end
-        if galleryRefresh then pcall(galleryRefresh, true) end
+        -- Auto area (silent) akan dibangun ulang oleh loop galeri; hindari
+        -- 2x rebuild kartu 3D saat boot.
+        if not silent and galleryRefresh then pcall(galleryRefresh, true) end
     end
 
     -- Pilih area yang berisi egg paling bagus (bukan selalu Forest).

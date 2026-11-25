@@ -61,7 +61,7 @@
         sort = 1,
         minRar = 1, minProg = 1, minVal = 1,
         galleryRar = 1,
-        fallback = true, strict = false,
+        fallback = true, strict = false, probe = true, lite = true,
         stealDelay = 0.6, hatchDelay = 1.2, sellDelay = 1.2,
     }
 
@@ -76,7 +76,13 @@
     local carryEventSeen = false
     local categoryRarity = {}
     local categoryProg = {}
+    local categoryValue = {}
+    local categoryWeight = {}
+    local categoryChance = {}
+    local categoryImage = {}
     local uidCategory = {}
     local uidArea = {}
+    local probeDone = {}
+    local probeAt = -1e9
     local toggleRefs = {}
 

@@ -7,11 +7,11 @@
                 if nm:find("egg", 1, true) or nm:find("icon", 1, true) or nm:find("image", 1, true)
                     or nm:find("thumb", 1, true) or nm:find("render", 1, true) then
                     local id = assetIdOf(d.Image)
-                    if id then return id end
+                    if id then info.imageId = id; return id end
                 end
             elseif d:IsA("Decal") or d:IsA("Texture") then
                 local id = assetIdOf(d.Texture)
-                if id then return id end
+                if id then info.imageId = id; return id end
             end
         end
         return nil
@@ -111,7 +111,7 @@
             TextTruncate = Enum.TextTruncate.AtEnd,
         }, card)
 
-        local rarText = "Rarity: " .. (RARITY_LABEL[i.rar] or "?")
+        local rarText = "Rarity: " .. (RARITY_LABEL[i.rar] or "-")
         if i.event then rarText = rarText .. "  •  EVENT" end
         inst("TextLabel", {
             Size = UDim2.new(1, -118, 0, 15),
@@ -163,6 +163,9 @@
     pgEgg:section("Galeri Egg")
     local galleryInfo = pgEgg:label("Memuat data egg...", { size = 11, color = C.sub })
 
+    local probeToggle = pgEgg:toggle("Auto Probe Record (debug)", state.probe, function(v) setFlag("probe", v) end)
+    bind("probe", probeToggle)
+
     local eggStealToggle = pgEgg:toggle("Auto Steal Egg", state.steal, function(v) setFlag("steal", v) end)
     bind("steal", eggStealToggle)
     local eggBestToggle = pgEgg:toggle("Pilih Egg Terbaik", state.best, function(v) setFlag("best", v) end)
@@ -186,14 +189,22 @@
             local e = eggs[1]
             if not e then ui:toast("Tidak ada egg di area ini.", "warn"); return end
             local uid = e.uid
-            log("DUMP EGG " .. tostring(e.m.Name) .. " uid=" .. tostring(uid))
-            log("ATTR: " .. table.concat(eggInfoCached(e.m).attrs, ", "):sub(1, 900))
+            local inf = eggInfoCached(e.m)
+            log("DUMP EGG " .. tostring(e.m.Name) .. " uid=" .. tostring(uid)
+                .. " cat=" .. tostring(debugCategoryOf(e, inf) or "-"))
+            log("ATTR: " .. table.concat(inf.attrs, ", "):sub(1, 900))
             local d = uid and (snapCache[uid] or snapMeta[uid])
             log("SNAPSHOT: " .. (d and ser(d):sub(1, 2200) or "tidak ada"))
         end },
         { text = "Steal Best", callback = manualSteal, variant = "primary" },
         { text = "TP Area", callback = function() tpArea(state.area) end },
     })
+
+    pgEgg:button("Probe Record (semua area)", function()
+        ui:toast("Probe record semua area...")
+        task.spawn(function() debugProbeAll(true) end)
+    end, { variant = "primary" })
+    pgEgg:button("Dump Semua Egg", function() debugDumpAll() end)
 
     local galleryBox = pgEgg:frame(120)
     galleryBox.BackgroundTransparency = 1
@@ -246,7 +257,8 @@
             return sa > sb
         end)
 
-        local shown = math.min(#list, 8)
+        local cardLimit = state.lite and 4 or 8
+        local shown = math.min(#list, cardLimit)
         for idx = 1, shown do
             local ok, err = pcall(makeEggCard, galleryBox, list[idx], idx)
             if not ok then log("ERROR kartu egg: " .. tostring(err)) end
@@ -262,5 +274,9 @@
     end
     galleryRefresh = function(force) return refreshGallery(force) end
 
-    pcall(refreshGallery, true)
+    -- Jangan clone 3D preview saat boot. Kartu dibuat hanya saat halaman Egg dibuka.
+    ui.onPageShow = function(id)
+        if id == "egg" and galleryRefresh then pcall(galleryRefresh, false) end
+    end
+    galleryDirty = true
 

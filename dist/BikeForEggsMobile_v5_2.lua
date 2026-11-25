@@ -524,6 +524,7 @@ local function boot()
             p.navLabel.TextColor3 = sel and C.text or C.sub
             p.indicator.Visible = sel
         end
+        if self.onPageShow then pcall(self.onPageShow, id) end
     end
 
     function BFEUI:minimize()
@@ -1071,7 +1072,7 @@ local function boot()
         sort = 1,
         minRar = 1, minProg = 1, minVal = 1,
         galleryRar = 1,
-        fallback = true, strict = false,
+        fallback = true, strict = false, probe = true, lite = true,
         stealDelay = 0.6, hatchDelay = 1.2, sellDelay = 1.2,
     }
 
@@ -1086,8 +1087,14 @@ local function boot()
     local carryEventSeen = false
     local categoryRarity = {}
     local categoryProg = {}
+    local categoryValue = {}
+    local categoryWeight = {}
+    local categoryChance = {}
+    local categoryImage = {}
     local uidCategory = {}
     local uidArea = {}
+    local probeDone = {}
+    local probeAt = -1e9
     local toggleRefs = {}
 
     --[[ ===================== 6. LOG SYSTEM ===================== ]]
@@ -1229,6 +1236,31 @@ local function boot()
         return net:FindFirstChild(name, true)
     end
 
+    -- Simpan data per kategori (AssetCategory / PetDisplayName) supaya egg tanpa
+    -- atribut rarity/value/weight tetap bisa diisi dari snapshot / record server.
+    local function applyCategoryMeta(cat, v)
+        if type(cat) ~= "string" or cat == "" or type(v) ~= "table" then return end
+        local key = string.lower(cat)
+
+        local pr = tonumber(v.ProgressionOrder or v.OriginalImportNumber)
+        if pr and pr > 0 and pr > (categoryProg[key] or 0) then categoryProg[key] = pr end
+
+        local r = rarityOf(v.Rarity or v.Tier or v.Grade)
+        if r > (categoryRarity[key] or 0) then categoryRarity[key] = r end
+
+        local val = parseValue(v.Value or v.Money or v.PerSecond or v.Price or v.Worth or v.Income)
+        if val and val > (categoryValue[key] or 0) then categoryValue[key] = val end
+
+        local w = parseValue(v.Weight or v.Kg or v.Mass)
+        if w and w > (categoryWeight[key] or 0) then categoryWeight[key] = w end
+
+        local c = parseChance(v.Chance or v.Odds or v.Probability)
+        if c and c > (categoryChance[key] or 0) then categoryChance[key] = c end
+
+        local im = assetIdOf(v.Image or v.Icon or v.Texture or v.Thumbnail or v.AssetId)
+        if im and not categoryImage[key] then categoryImage[key] = im end
+    end
+
     local function indexSnapshot(t, depth, seen)
         if type(t) ~= "table" or (depth or 0) > 6 then return end
         seen = seen or {}
@@ -1240,6 +1272,9 @@ local function boot()
                 if id and type(v) == "table" then snapCache[string.lower(id)] = v end
             end
             if type(v) == "table" then
+                local anyCat = v.AssetCategory or v.Category or v.PetDisplayName or v.DisplayName
+                applyCategoryMeta(anyCat, v)
+
                 local uid
                 for _, f in ipairs({"Id", "ID", "EggId", "EggID", "Uid", "UID", "Guid", "GUID", "id"}) do
                     local s = v[f]
@@ -1348,6 +1383,84 @@ local function boot()
             if lastErr then log("Catatan: " .. lastErr) end
         end
         return true
+    end
+
+    -- Runtime snapshot: cadangan kalau AreaEggSnapshot tidak membawa rarity/value.
+    local function refreshRuntimeSnapshot(verbose)
+        local rf = netRemote("Eggs: RequestRuntimeSnapshot")
+        if not rf or not rf:IsA("RemoteFunction") then
+            if verbose then log("RequestRuntimeSnapshot remote tidak ada.") end
+            return false
+        end
+        local before = snapCount()
+        local attempts = { {}, { state.area } }
+        for _, args in ipairs(attempts) do
+            local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
+            if ok and res then
+                indexSnapshot(res, 0)
+                if verbose then
+                    log("Runtime snapshot: +" .. (snapCount() - before) .. " entri baru.")
+                    log("RUNTIME RAW: " .. ser(res):sub(1, 900))
+                end
+                return true
+            end
+        end
+        return false
+    end
+
+    -- Probe RequestEggRecord untuk satu egg/kategori. Di-cache supaya tidak spam server.
+    local function probeRecord(uid, cat, areaName, verbose)
+        if not uid and not cat then return nil end
+        local key = cat and string.lower(cat) or ("uid:" .. tostring(uid))
+        if probeDone[key] and not verbose then return nil end
+        probeDone[key] = true
+
+        local rf = netRemote("Eggs: RequestEggRecord")
+        if not rf or not rf:IsA("RemoteFunction") then
+            if verbose then log("RequestEggRecord remote tidak ada.") end
+            return nil
+        end
+
+        local attempts = {}
+        if uid then
+            attempts[#attempts + 1] = { uid }
+            if areaName then attempts[#attempts + 1] = { areaName, uid } end
+            attempts[#attempts + 1] = { state.area, uid }
+        end
+        if cat then
+            attempts[#attempts + 1] = { cat }
+            if areaName then attempts[#attempts + 1] = { areaName, cat } end
+            attempts[#attempts + 1] = { state.area, cat }
+        end
+
+        local seen = {}
+        for _, args in ipairs(attempts) do
+            local sig = table.concat(args, "|")
+            if not seen[sig] then
+                seen[sig] = true
+                local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
+                if ok and res then
+                    indexSnapshot(res, 0)
+                    local gotCat = cat or (type(res) == "table" and (res.AssetCategory or res.DisplayName or res.Category))
+                    applyCategoryMeta(gotCat, res)
+                    if verbose then log("RECORD " .. sig .. ": " .. ser(res):sub(1, 700)) end
+                    return res
+                end
+            end
+        end
+        if verbose then log("RECORD tidak ada untuk " .. tostring(key)) end
+        return nil
+    end
+
+    local function debugSummary()
+        local function count(t)
+            local c = 0
+            for _ in pairs(t) do c = c + 1 end
+            return c
+        end
+        return string.format("cache=%d nama=%d kategori=%d rarity=%d value=%d weight=%d",
+            snapCount(), count(snapByName), count(uidCategory),
+            count(categoryRarity), count(categoryValue), count(categoryWeight))
     end
 
     --[[ ===================== 9. EGG INFO & FILTER ===================== ]]
@@ -1508,6 +1621,14 @@ local function boot()
                 if r and r > info.rar then info.rar = r end
                 local p = categoryProg[cat]
                 if p and p > info.prog then info.prog = p end
+                local v = categoryValue[cat]
+                if v and v > info.val then info.val = v end
+                local w = categoryWeight[cat]
+                if w and w > info.weight then info.weight = w end
+                local c = categoryChance[cat]
+                if c and c > info.chance then info.chance = c end
+                local im = categoryImage[cat]
+                if im and not info.imageId then info.imageId = im end
             end
             local aid = uidArea[key]
             if aid then info.areaId = aid end
@@ -1642,6 +1763,11 @@ local function boot()
         if not nd and theme then nd = snapByName[tostring(theme):lower()] end
         if nd then scanTable(info, nd, 0) end
 
+        -- Dari atribut PetDisplayName/DisplayName kita tahu kategori egg-nya.
+        -- Simpan supaya ClaimFeedback / Probe Record bisa mengisi rarity + value.
+        if eggUid and info.name ~= "" and not uidCategory[eggUid] then
+            uidCategory[eggUid] = string.lower(info.name)
+        end
         if eggUid then applyMeta(eggUid) end
         if info.name == "" then info.name = "Egg" .. (info.prog > 0 and (" #" .. tostring(info.prog)) or "") end
         if info.rar == 0 and info.name ~= "" then info.rar = rarityFromText(info.name) end
@@ -1676,10 +1802,28 @@ local function boot()
         return best, bd
     end
 
-    local function collectEggModels(container, out)
+    -- Kumpulan model egg di-cache. Dulu areaEggs() menyusuri seluruh pohon
+    -- AreaEggSlotsClient setiap dipanggil (home/gallery/steal/auto-area).
+    local eggCache = { at = -1e9, folder = nil, all = {}, byModel = setmetatable({}, { __mode = "k" }), conns = {} }
+
+    local function cachedEggEntry(m, pos)
+        local e = eggCache.byModel[m]
+        if not e then
+            e = { m = m }
+            eggCache.byModel[m] = e
+        end
+        local uid = guidOf(m.Name)
+        e.pos = pos
+        e.uid = uid and string.lower(uid) or nil
+        e.areaId = m:GetAttribute("AreaId")
+        return e
+    end
+
+    local function collectEggModels(container, out, depth)
+        if not container or (depth or 0) > 6 then return end
         for _, child in ipairs(container:GetChildren()) do
             if child:IsA("Folder") then
-                collectEggModels(child, out)
+                collectEggModels(child, out, depth + 1)
             elseif child:IsA("Model") then
                 local isEgg = child.Name:find("AreaEgg", 1, true)
                     or child:FindFirstChild("Hitbox", true)
@@ -1688,19 +1832,29 @@ local function boot()
                     or child:GetAttribute("DisplayName")
                 if isEgg then
                     local pos = eggPos(child)
-                    if pos then
-                        local uid = guidOf(child.Name)
-                        out[#out + 1] = {
-                            m = child, pos = pos,
-                            uid = uid and string.lower(uid) or nil,
-                            areaId = child:GetAttribute("AreaId"),
-                        }
-                    end
+                    if pos then out[#out + 1] = cachedEggEntry(child, pos) end
                 else
-                    collectEggModels(child, out)
+                    collectEggModels(child, out, depth + 1)
                 end
             end
         end
+    end
+
+    local function rebuildEggCache(folder)
+        if eggCache.folder ~= folder then
+            for _, c in ipairs(eggCache.conns) do pcall(function() c:Disconnect() end) end
+            eggCache.conns = {}
+            eggCache.folder = folder
+            eggCache.byModel = setmetatable({}, { __mode = "k" })
+            pcall(function()
+                eggCache.conns[#eggCache.conns + 1] = folder.DescendantAdded:Connect(function() eggCache.at = -1e9 end)
+                eggCache.conns[#eggCache.conns + 1] = folder.DescendantRemoving:Connect(function() eggCache.at = -1e9 end)
+            end)
+        end
+        local all = {}
+        collectEggModels(folder, all, 0)
+        eggCache.all = all
+        eggCache.at = os.clock()
     end
 
     local function eggAreaIndex(e)
@@ -1715,15 +1869,23 @@ local function boot()
 
     local function areaEggs(forceAll)
         local folder = workspace:FindFirstChild("AreaEggSlotsClient")
-        local out = {}
-        if not folder then return out end
-        collectEggModels(folder, out)
+        if not folder then return {} end
+        if eggCache.folder ~= folder or os.clock() - eggCache.at > 1.5 then
+            rebuildEggCache(folder)
+        end
+        local out = eggCache.all
         if forceAll or state.allAreas then return out end
         local filtered = {}
         for _, e in ipairs(out) do
             if eggAreaIndex(e) == state.area then filtered[#filtered + 1] = e end
         end
         return filtered
+    end
+
+    -- Reset cache info tanpa membuat table metatable baru tiap kali event masuk.
+    local function clearInfoCache()
+        infoCache = setmetatable({}, { __mode = "k" })
+        for _, e in ipairs(eggCache.all) do e.info = nil end
     end
 
     local function passFilter(info)
@@ -1936,7 +2098,9 @@ local function boot()
         gallerySig = ""
         if not silent then log("Area dipilih: " .. AREAS[i][1]) end
         if updateHome then updateHome() end
-        if galleryRefresh then pcall(galleryRefresh, true) end
+        -- Auto area (silent) akan dibangun ulang oleh loop galeri; hindari
+        -- 2x rebuild kartu 3D saat boot.
+        if not silent and galleryRefresh then pcall(galleryRefresh, true) end
     end
 
     -- Pilih area yang berisi egg paling bagus (bukan selalu Forest).
@@ -1980,11 +2144,13 @@ local function boot()
         return nil
     end
 
-    local promptCache = { at = -1e9, hatch = {}, sell = {} }
+    -- Satu scan workspace saja untuk hatch/sell DAN SmartPromptPart.
+    -- Dulu scanPrompts() dan smartParts() masing-masing memanggil GetDescendants().
+    local promptCache = { at = -1e9, hatch = {}, sell = {}, smart = {} }
     local function scanPrompts()
         if os.clock() - promptCache.at < 2 then return end
         promptCache.at = os.clock()
-        promptCache.hatch, promptCache.sell = {}, {}
+        promptCache.hatch, promptCache.sell, promptCache.smart = {}, {}, {}
         for _, d in ipairs(workspace:GetDescendants()) do
             if d:IsA("ProximityPrompt") and d.Enabled then
                 local at = string.lower(d.ActionText or "")
@@ -1995,6 +2161,8 @@ local function boot()
                     local part = promptPart(d)
                     if part then target[#target + 1] = { prompt = d, part = part } end
                 end
+            elseif d.Name == "SmartPromptPart" and d:IsA("BasePart") then
+                promptCache.smart[#promptCache.smart + 1] = d
             end
         end
     end
@@ -2010,18 +2178,9 @@ local function boot()
         return best
     end
 
-    local smartCache = { at = -1e9, parts = {} }
     local function smartParts()
-        if os.clock() - smartCache.at > 2 then
-            smartCache.at = os.clock()
-            smartCache.parts = {}
-            for _, d in ipairs(workspace:GetDescendants()) do
-                if d.Name == "SmartPromptPart" and d:IsA("BasePart") then
-                    smartCache.parts[#smartCache.parts + 1] = d
-                end
-            end
-        end
-        return smartCache.parts
+        scanPrompts()
+        return promptCache.smart
     end
 
     local function carryPrompt()
@@ -2208,7 +2367,7 @@ local function boot()
             if os.clock() - snapAt > 6 and os.clock() - lastSnapTry > 3 then
                 lastSnapTry = os.clock()
                 if refreshSnapshot(false) then
-                    infoCache = setmetatable({}, { __mode = "k" })
+                    clearInfoCache()
                 end
             end
             e = pickBest(eggs)
@@ -2259,6 +2418,69 @@ local function boot()
         end)
     end
 
+    --[[ ===================== 12b. DEBUG DATA (SEMUA AREA) ===================== ]]
+    local function debugCategoryOf(e, i)
+        if e and e.uid and uidCategory[e.uid] then return uidCategory[e.uid] end
+        local n = i and i.name
+        if n and n ~= "" and not n:find("Egg #", 1, true) then return string.lower(n) end
+        local attr = e and e.m and e.m:GetAttribute("PetDisplayName")
+        if type(attr) == "string" and attr ~= "" then return string.lower(attr) end
+        return nil
+    end
+
+    -- Probe RequestEggRecord untuk semua area. Dipanggil otomatis (terbatas) atau manual dari tombol.
+    local function debugProbeAll(verbose)
+        local eggs = areaEggs(true)
+        if #eggs == 0 then
+            if verbose then log("PROBE: tidak ada egg di AreaEggSlotsClient.") end
+            return 0
+        end
+
+        if verbose or os.clock() - probeAt > 45 then
+            probeAt = os.clock()
+            pcall(refreshRuntimeSnapshot, false)
+        end
+
+        local found, checked = 0, 0
+        local limit = verbose and 12 or 6
+        for _, e in ipairs(eggs) do
+            local i = e.info or eggInfoCached(e.m)
+            local uid = e.uid
+            local cat = debugCategoryOf(e, i)
+            if cat and uid then uidCategory[uid] = cat end
+            local ai = eggAreaIndex(e)
+            local areaName = (AREAS[ai] and AREAS[ai][1]) or AREAS[state.area][1]
+            if probeRecord(uid, cat, areaName, verbose) then found = found + 1 end
+            checked = checked + 1
+            if checked >= limit then break end
+        end
+
+        clearInfoCache()
+        galleryDirty = true
+        gallerySig = ""
+        if verbose then
+            log(string.format("PROBE selesai: %d egg dicek, %d record ketemu. %s",
+                checked, found, debugSummary()))
+            if galleryRefresh then pcall(galleryRefresh, true) end
+        end
+        return found
+    end
+
+    local function debugDumpAll()
+        local eggs = areaEggs(true)
+        log("== DEBUG SEMUA AREA: " .. #eggs .. " egg ==")
+        for idx, e in ipairs(eggs) do
+            if idx > 20 then log("... dipotong (20 pertama)"); break end
+            local i = e.info or eggInfoCached(e.m)
+            local ai = eggAreaIndex(e)
+            log(string.format("#%d [%s] %s | uid=%s cat=%s rar=%s val=%s kg=%s prog=%s",
+                idx, AREAS[ai][1], tostring(i.name),
+                tostring(e.uid or "-"):sub(1, 12),
+                tostring(debugCategoryOf(e, i) or "-"),
+                tostring(i.rar), fmtVal(i.val), fmtKg(i.weight), tostring(i.prog)))
+        end
+        log("DEBUG CACHE: " .. debugSummary())
+    end
     --[[ ===================== 13. UI BOOT ===================== ]]
     ui = BFEUI.new({
         title = "Bike For Eggs",
@@ -2386,7 +2608,7 @@ local function boot()
         task.spawn(function()
             if os.clock() - snapAt > 4 then
                 if refreshSnapshot(false) then
-                    infoCache = setmetatable({}, { __mode = "k" })
+                    clearInfoCache()
                 end
             end
             local eggs = areaEggs()
@@ -2509,11 +2731,11 @@ local function boot()
                 if nm:find("egg", 1, true) or nm:find("icon", 1, true) or nm:find("image", 1, true)
                     or nm:find("thumb", 1, true) or nm:find("render", 1, true) then
                     local id = assetIdOf(d.Image)
-                    if id then return id end
+                    if id then info.imageId = id; return id end
                 end
             elseif d:IsA("Decal") or d:IsA("Texture") then
                 local id = assetIdOf(d.Texture)
-                if id then return id end
+                if id then info.imageId = id; return id end
             end
         end
         return nil
@@ -2613,7 +2835,7 @@ local function boot()
             TextTruncate = Enum.TextTruncate.AtEnd,
         }, card)
 
-        local rarText = "Rarity: " .. (RARITY_LABEL[i.rar] or "?")
+        local rarText = "Rarity: " .. (RARITY_LABEL[i.rar] or "-")
         if i.event then rarText = rarText .. "  •  EVENT" end
         inst("TextLabel", {
             Size = UDim2.new(1, -118, 0, 15),
@@ -2665,6 +2887,9 @@ local function boot()
     pgEgg:section("Galeri Egg")
     local galleryInfo = pgEgg:label("Memuat data egg...", { size = 11, color = C.sub })
 
+    local probeToggle = pgEgg:toggle("Auto Probe Record (debug)", state.probe, function(v) setFlag("probe", v) end)
+    bind("probe", probeToggle)
+
     local eggStealToggle = pgEgg:toggle("Auto Steal Egg", state.steal, function(v) setFlag("steal", v) end)
     bind("steal", eggStealToggle)
     local eggBestToggle = pgEgg:toggle("Pilih Egg Terbaik", state.best, function(v) setFlag("best", v) end)
@@ -2688,14 +2913,22 @@ local function boot()
             local e = eggs[1]
             if not e then ui:toast("Tidak ada egg di area ini.", "warn"); return end
             local uid = e.uid
-            log("DUMP EGG " .. tostring(e.m.Name) .. " uid=" .. tostring(uid))
-            log("ATTR: " .. table.concat(eggInfoCached(e.m).attrs, ", "):sub(1, 900))
+            local inf = eggInfoCached(e.m)
+            log("DUMP EGG " .. tostring(e.m.Name) .. " uid=" .. tostring(uid)
+                .. " cat=" .. tostring(debugCategoryOf(e, inf) or "-"))
+            log("ATTR: " .. table.concat(inf.attrs, ", "):sub(1, 900))
             local d = uid and (snapCache[uid] or snapMeta[uid])
             log("SNAPSHOT: " .. (d and ser(d):sub(1, 2200) or "tidak ada"))
         end },
         { text = "Steal Best", callback = manualSteal, variant = "primary" },
         { text = "TP Area", callback = function() tpArea(state.area) end },
     })
+
+    pgEgg:button("Probe Record (semua area)", function()
+        ui:toast("Probe record semua area...")
+        task.spawn(function() debugProbeAll(true) end)
+    end, { variant = "primary" })
+    pgEgg:button("Dump Semua Egg", function() debugDumpAll() end)
 
     local galleryBox = pgEgg:frame(120)
     galleryBox.BackgroundTransparency = 1
@@ -2748,7 +2981,8 @@ local function boot()
             return sa > sb
         end)
 
-        local shown = math.min(#list, 8)
+        local cardLimit = state.lite and 4 or 8
+        local shown = math.min(#list, cardLimit)
         for idx = 1, shown do
             local ok, err = pcall(makeEggCard, galleryBox, list[idx], idx)
             if not ok then log("ERROR kartu egg: " .. tostring(err)) end
@@ -2764,7 +2998,11 @@ local function boot()
     end
     galleryRefresh = function(force) return refreshGallery(force) end
 
-    pcall(refreshGallery, true)
+    -- Jangan clone 3D preview saat boot. Kartu dibuat hanya saat halaman Egg dibuka.
+    ui.onPageShow = function(id)
+        if id == "egg" and galleryRefresh then pcall(galleryRefresh, false) end
+    end
+    galleryDirty = true
 
     --[[ ===================== 18. AREA PAGE ===================== ]]
     local pgArea = ui:page("area", "Area", "🗺️")
@@ -2873,7 +3111,7 @@ local function boot()
             "Area: " .. AREAS[state.area][1] .. (state.allAreas and " + semua" or ""),
             "Steal: " .. tostring(state.steal) .. " | Best: " .. tostring(state.best) .. " | Sort: " .. SORTS[state.sort],
             "Filter: rar=" .. RARITY_NAMES[state.minRar] .. " prog=" .. PROG_NAMES[state.minProg] .. " val=" .. VALUE_NAMES[state.minVal],
-            "Fallback: " .. tostring(state.fallback) .. " | Strict: " .. tostring(state.strict),
+            "Fallback: " .. tostring(state.fallback) .. " | Strict: " .. tostring(state.strict) .. " | Lite: " .. tostring(state.lite),
             "Base: " .. (b and (tostring(src) .. " @ " .. math.floor(b.X) .. "," .. math.floor(b.Z)) or "belum"),
             "Egg di area: " .. tostring(#areaEggs()),
         }, "\n")
@@ -2888,7 +3126,7 @@ local function boot()
     local pgInfo = ui:page("info", "Info", "ℹ️")
     pgInfo:section("Tentang")
     pgInfo:card({
-        {"Versi", "v5.3"},
+        {"Versi", "v5.5"},
         {"UI", "BFEUI (embedded)"},
         {"Player", lp.Name},
         {"Executor", executorName},
@@ -2899,6 +3137,15 @@ local function boot()
 
     pgInfo:section("Cara Pakai")
     pgInfo:note("1) Halaman Area: pilih area lalu Set Base. 2) Halaman Filter: atur urutan & filter Best Egg. 3) Halaman Steal: aktifkan Auto Steal. 4) Halaman Auto: aktifkan Hatch/Sell kalau perlu.")
+
+    pgInfo:section("Performa")
+    local liteToggle = pgInfo:toggle("Mode Ringan (4 kartu)", state.lite, function(v)
+        setFlag("lite", v)
+        galleryDirty = true
+        gallerySig = ""
+    end)
+    bind("lite", liteToggle)
+    pgInfo:note("Mode Ringan mengurangi kartu preview 3D dari 8 ke 4. Scan prompt dan data egg juga di-cache, jadi tidak mengulang GetDescendants tiap loop.")
 
     pgInfo:section("Kontrol")
     pgInfo:buttonRow({
@@ -3100,7 +3347,7 @@ local function boot()
                         end
                     end
                     if changed then
-                        infoCache = setmetatable({}, { __mode = "k" })
+                        clearInfoCache()
                         galleryDirty = true
                         gallerySig = ""
                     end
@@ -3121,14 +3368,23 @@ local function boot()
     updateHome()
 
     task.spawn(function()
-        task.wait(0.5)
-        if running and refreshSnapshot(false) then
-            infoCache = setmetatable({}, { __mode = "k" })
-            galleryDirty = true
-            gallerySig = ""
-            if state.autoArea then pcall(pickBestArea, false) end
-            if galleryRefresh then pcall(galleryRefresh, true) end
-            if ui.current == "home" and updateHome then updateHome() end
+        -- Beri game waktu selesai spawn sebelum kerja berat (snapshot/scan).
+        task.wait(1.2)
+        if not running or not refreshSnapshot(false) then return end
+        clearInfoCache()
+        galleryDirty = true
+        gallerySig = ""
+        if state.autoArea then pcall(pickBestArea, false) end
+        if ui.current == "home" and updateHome then updateHome() end
+
+        -- Probe debug ditunda supaya tidak bersamaan dengan snapshot + UI awal.
+        if state.probe then
+            task.spawn(function()
+                task.wait(5)
+                if not running then return end
+                pcall(debugProbeAll, false)
+                if ui.current == "home" and updateHome then updateHome() end
+            end)
         end
     end)
 end

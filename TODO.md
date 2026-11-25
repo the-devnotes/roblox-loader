@@ -1,5 +1,20 @@
 # TODO / handoff cepat
 
+## v5.5 — optimasi first entry
+- `scanPrompts()` sekarang mengisi hatch, sell, **dan** `SmartPromptPart` dalam satu `workspace:GetDescendants()` (dulu dua scan terpisah tiap 2 detik).
+- `areaEggs()` memakai cache model + invalidiasi `DescendantAdded/Removing` dan TTL 1,5 detik, bukan menyusuri `AreaEggSlotsClient` tiap dipanggil.
+- `clearInfoCache()` dipakai semua tempat, jadi tidak membuat table metatable baru berulang kali dan `e.info` ikut terhapus.
+- Galeri tidak di-build saat boot; kartu 3D dibuat saat halaman Egg dibuka (`ui.onPageShow`). Mode Ringan membatasi 4 kartu.
+- Snapshot ditunda 1,2 detik, probe debug ditunda 5 detik, dan auto-area tidak force rebuild galeri.
+
+## v5.4 — sudah diperbaiki
+Debug dataegg berlaku untuk **semua area**:
+- `RequestRuntimeSnapshot` dan `RequestEggRecord` dipanggil dengan beberapa variasi argumen `(uid)`, `(area, uid)`, `(category)`, `(area, category)`.
+- Hasilnya di-index ke `categoryRarity/Value/Weight/Chance/Image/Prog` dan dipakai `eggInfo()` lewat `uidCategory`.
+- `PetDisplayName` / `DisplayName` dari model disimpan sebagai kategori, jadi egg tanpa atribut rarity ikut terisi.
+- UI Egg: toggle **Auto Probe Record**, tombol **Probe Record (semua area)**, **Dump Semua Egg**, **Dump 1 Egg**.
+- Rarity kosong ditampilkan `-`, bukan `?`.
+
 ## v5.3 — sudah diperbaiki
 Steal egg paling belakang membuat penjaga mengambil egg karena script menunggu konfirmasi `CarryState` sambil masih berdiri di dekat egg. Sekarang setelah prompt dikirim, karakter **langsung teleport ke base**, lalu konfirmasi ditunggu di base. Kalau Uid/Area salah, script kembali ke egg untuk retry.
 

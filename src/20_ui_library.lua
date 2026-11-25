@@ -359,6 +359,7 @@
             p.navLabel.TextColor3 = sel and C.text or C.sub
             p.indicator.Visible = sel
         end
+        if self.onPageShow then pcall(self.onPageShow, id) end
     end
 
     function BFEUI:minimize()

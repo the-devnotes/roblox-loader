@@ -138,7 +138,7 @@
             if os.clock() - snapAt > 6 and os.clock() - lastSnapTry > 3 then
                 lastSnapTry = os.clock()
                 if refreshSnapshot(false) then
-                    infoCache = setmetatable({}, { __mode = "k" })
+                    clearInfoCache()
                 end
             end
             e = pickBest(eggs)

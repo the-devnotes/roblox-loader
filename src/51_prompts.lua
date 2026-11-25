@@ -9,11 +9,13 @@
         return nil
     end
 
-    local promptCache = { at = -1e9, hatch = {}, sell = {} }
+    -- Satu scan workspace saja untuk hatch/sell DAN SmartPromptPart.
+    -- Dulu scanPrompts() dan smartParts() masing-masing memanggil GetDescendants().
+    local promptCache = { at = -1e9, hatch = {}, sell = {}, smart = {} }
     local function scanPrompts()
         if os.clock() - promptCache.at < 2 then return end
         promptCache.at = os.clock()
-        promptCache.hatch, promptCache.sell = {}, {}
+        promptCache.hatch, promptCache.sell, promptCache.smart = {}, {}, {}
         for _, d in ipairs(workspace:GetDescendants()) do
             if d:IsA("ProximityPrompt") and d.Enabled then
                 local at = string.lower(d.ActionText or "")
@@ -24,6 +26,8 @@
                     local part = promptPart(d)
                     if part then target[#target + 1] = { prompt = d, part = part } end
                 end
+            elseif d.Name == "SmartPromptPart" and d:IsA("BasePart") then
+                promptCache.smart[#promptCache.smart + 1] = d
             end
         end
     end
@@ -39,18 +43,9 @@
         return best
     end
 
-    local smartCache = { at = -1e9, parts = {} }
     local function smartParts()
-        if os.clock() - smartCache.at > 2 then
-            smartCache.at = os.clock()
-            smartCache.parts = {}
-            for _, d in ipairs(workspace:GetDescendants()) do
-                if d.Name == "SmartPromptPart" and d:IsA("BasePart") then
-                    smartCache.parts[#smartCache.parts + 1] = d
-                end
-            end
-        end
-        return smartCache.parts
+        scanPrompts()
+        return promptCache.smart
     end
 
     local function carryPrompt()

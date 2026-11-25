@@ -156,6 +156,14 @@
                 if r and r > info.rar then info.rar = r end
                 local p = categoryProg[cat]
                 if p and p > info.prog then info.prog = p end
+                local v = categoryValue[cat]
+                if v and v > info.val then info.val = v end
+                local w = categoryWeight[cat]
+                if w and w > info.weight then info.weight = w end
+                local c = categoryChance[cat]
+                if c and c > info.chance then info.chance = c end
+                local im = categoryImage[cat]
+                if im and not info.imageId then info.imageId = im end
             end
             local aid = uidArea[key]
             if aid then info.areaId = aid end
@@ -290,6 +298,11 @@
         if not nd and theme then nd = snapByName[tostring(theme):lower()] end
         if nd then scanTable(info, nd, 0) end
 
+        -- Dari atribut PetDisplayName/DisplayName kita tahu kategori egg-nya.
+        -- Simpan supaya ClaimFeedback / Probe Record bisa mengisi rarity + value.
+        if eggUid and info.name ~= "" and not uidCategory[eggUid] then
+            uidCategory[eggUid] = string.lower(info.name)
+        end
         if eggUid then applyMeta(eggUid) end
         if info.name == "" then info.name = "Egg" .. (info.prog > 0 and (" #" .. tostring(info.prog)) or "") end
         if info.rar == 0 and info.name ~= "" then info.rar = rarityFromText(info.name) end
@@ -324,10 +337,28 @@
         return best, bd
     end
 
-    local function collectEggModels(container, out)
+    -- Kumpulan model egg di-cache. Dulu areaEggs() menyusuri seluruh pohon
+    -- AreaEggSlotsClient setiap dipanggil (home/gallery/steal/auto-area).
+    local eggCache = { at = -1e9, folder = nil, all = {}, byModel = setmetatable({}, { __mode = "k" }), conns = {} }
+
+    local function cachedEggEntry(m, pos)
+        local e = eggCache.byModel[m]
+        if not e then
+            e = { m = m }
+            eggCache.byModel[m] = e
+        end
+        local uid = guidOf(m.Name)
+        e.pos = pos
+        e.uid = uid and string.lower(uid) or nil
+        e.areaId = m:GetAttribute("AreaId")
+        return e
+    end
+
+    local function collectEggModels(container, out, depth)
+        if not container or (depth or 0) > 6 then return end
         for _, child in ipairs(container:GetChildren()) do
             if child:IsA("Folder") then
-                collectEggModels(child, out)
+                collectEggModels(child, out, depth + 1)
             elseif child:IsA("Model") then
                 local isEgg = child.Name:find("AreaEgg", 1, true)
                     or child:FindFirstChild("Hitbox", true)
@@ -336,19 +367,29 @@
                     or child:GetAttribute("DisplayName")
                 if isEgg then
                     local pos = eggPos(child)
-                    if pos then
-                        local uid = guidOf(child.Name)
-                        out[#out + 1] = {
-                            m = child, pos = pos,
-                            uid = uid and string.lower(uid) or nil,
-                            areaId = child:GetAttribute("AreaId"),
-                        }
-                    end
+                    if pos then out[#out + 1] = cachedEggEntry(child, pos) end
                 else
-                    collectEggModels(child, out)
+                    collectEggModels(child, out, depth + 1)
                 end
             end
         end
+    end
+
+    local function rebuildEggCache(folder)
+        if eggCache.folder ~= folder then
+            for _, c in ipairs(eggCache.conns) do pcall(function() c:Disconnect() end) end
+            eggCache.conns = {}
+            eggCache.folder = folder
+            eggCache.byModel = setmetatable({}, { __mode = "k" })
+            pcall(function()
+                eggCache.conns[#eggCache.conns + 1] = folder.DescendantAdded:Connect(function() eggCache.at = -1e9 end)
+                eggCache.conns[#eggCache.conns + 1] = folder.DescendantRemoving:Connect(function() eggCache.at = -1e9 end)
+            end)
+        end
+        local all = {}
+        collectEggModels(folder, all, 0)
+        eggCache.all = all
+        eggCache.at = os.clock()
     end
 
     local function eggAreaIndex(e)
@@ -363,15 +404,23 @@
 
     local function areaEggs(forceAll)
         local folder = workspace:FindFirstChild("AreaEggSlotsClient")
-        local out = {}
-        if not folder then return out end
-        collectEggModels(folder, out)
+        if not folder then return {} end
+        if eggCache.folder ~= folder or os.clock() - eggCache.at > 1.5 then
+            rebuildEggCache(folder)
+        end
+        local out = eggCache.all
         if forceAll or state.allAreas then return out end
         local filtered = {}
         for _, e in ipairs(out) do
             if eggAreaIndex(e) == state.area then filtered[#filtered + 1] = e end
         end
         return filtered
+    end
+
+    -- Reset cache info tanpa membuat table metatable baru tiap kali event masuk.
+    local function clearInfoCache()
+        infoCache = setmetatable({}, { __mode = "k" })
+        for _, e in ipairs(eggCache.all) do e.info = nil end
     end
 
     local function passFilter(info)
