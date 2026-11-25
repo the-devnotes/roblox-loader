@@ -15,7 +15,7 @@ Folder ini siap dipush ke GitHub. Script asli di `../Lainnya/BikeForEggsMobile_v
 2. `loader.lua` sudah diisi untuk `danu-dev/roblox` branch `main` (ganti kalau kamu fork).
 3. Paste `loader.lua` ke `LocalScript`.
 
-Kalau `loadstring` / HttpGet tidak tersedia, pakai Opsi A.
+Penting: `raw.githubusercontent.com` **hanya bisa diakses kalau repo PUBLIC**. Kalau repo masih private, raw URL balas `404: Not Found` dan loader akan kasih warning. Selain itu, kalau `loadstring` tidak tersedia di environment-mu, pakai Opsi A. Opsi A selalu paling aman karena tidak bergantung GitHub sama sekali.
 
 ## Strukturfolder
 

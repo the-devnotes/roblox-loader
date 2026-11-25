@@ -22,6 +22,16 @@ if not ok or type(src) ~= "string" or src == "" then
     return
 end
 
+if src:find("404: Not Found", 1, true) or src:find("<title>404", 1, true) then
+    warn("[BikeForEggs] Raw URL 404. Kemungkinan repo masih PRIVATE / salah branch. Buka repo > Settings > General > Change visibility > Public. Atau paste dist/BikeForEggsMobile.lua langsung.")
+    return
+end
+
+if type(loadstring) ~= "function" then
+    warn("[BikeForEggs] loadstring tidak tersedia di environment ini. Paste isi dist/BikeForEggsMobile.lua langsung ke LocalScript.")
+    return
+end
+
 local fn, err = loadstring(src)
 if not fn then
     warn("[BikeForEggs] loadstring error: " .. tostring(err))
