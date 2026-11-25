@@ -1094,6 +1094,7 @@ local function boot()
     local categoryImage = {}
     local uidCategory = {}
     local uidArea = {}
+    local assetUidHints = {} -- Uid asli dari StealTargetEvent (bukan nama model AreaEgg_)
     local probeDone = {}
     local probeAt = -1e9
     local toggleRefs = {}
@@ -1245,6 +1246,13 @@ local function boot()
         if v:match("^telur%s*#?%s*%d*$") then return true end
         return false
     end
+
+    -- Urutan katalog egg bertema di game (dari dump): makin belakang makin tinggi.
+    -- Dipakai hanya sebagai fallback kalau model tidak punya ProgressionOrder.
+    local THEME_PROG = {
+        penguin = 1, walrus = 2, bear = 3, tiger = 4, mammoth = 5,
+        king = 6, yeti = 7, dragon = 8, snake = 9, cerberus = 10,
+    }
 
     local GUID_PATTERN = "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x"
     local function guidOf(s)
@@ -1443,11 +1451,6 @@ local function boot()
 
     -- Runtime snapshot: cadangan kalau AreaEggSnapshot tidak membawa rarity/value.
     local function refreshRuntimeSnapshot(verbose)
-        local rf = netRemote("Eggs: RequestRuntimeSnapshot")
-        if not rf or not rf:IsA("RemoteFunction") then
-            if verbose then log("RequestRuntimeSnapshot remote tidak ada.") end
-            return false
-        end
         local before = snapCount()
         local areaName = AREAS[state.area][1]
         local attempts = {
@@ -1457,16 +1460,30 @@ local function boot()
             { { AreaId = areaName } },
             { { Area = areaName } },
         }
-        for _, args in ipairs(attempts) do
-            local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
-            if ok and res then
-                indexSnapshot(res, 0)
-                noteSnap("RUNTIME RAW (" .. argSig(args) .. "): +" .. (snapCount() - before)
-                    .. " entri | " .. ser(res):sub(1, 900), verbose)
-                return true
+        -- Dua namespace snapshot: Eggs punya data egg, ActiveAssets punya data
+        -- aset aktif (termasuk target steal). Coba keduanya.
+        local any = false
+        for _, remoteName in ipairs({
+            "Eggs: RequestRuntimeSnapshot",
+            "ActiveAssets: RequestRuntimeSnapshot",
+        }) do
+            local rf = netRemote(remoteName)
+            if rf and rf:IsA("RemoteFunction") then
+                for _, args in ipairs(attempts) do
+                    local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
+                    if ok and res then
+                        any = true
+                        indexSnapshot(res, 0)
+                        noteSnap("RUNTIME RAW [" .. remoteName .. "] (" .. argSig(args) .. "): +"
+                            .. (snapCount() - before) .. " entri | " .. ser(res):sub(1, 900), verbose)
+                        break
+                    end
+                end
+            elseif verbose then
+                log(remoteName .. " remote tidak ada.")
             end
         end
-        return false
+        return any
     end
 
     -- Probe RequestEggRecord untuk satu egg/kategori. Di-cache supaya tidak spam server.
@@ -1505,6 +1522,9 @@ local function boot()
             attempts[#attempts + 1] = { id }
             attempts[#attempts + 1] = { { Uid = id } }
             attempts[#attempts + 1] = { { uid = id } }
+            attempts[#attempts + 1] = { { Uuid = id } }
+            attempts[#attempts + 1] = { { AssetUid = id } }
+            attempts[#attempts + 1] = { { assetUid = id } }
             if areaName then attempts[#attempts + 1] = { areaName, id } end
             attempts[#attempts + 1] = { state.area, id }
         end
@@ -1839,6 +1859,9 @@ local function boot()
         if info.rar == 0 then
             local r = rarityFromText(info.name)
             if r > 0 then info.rar = r end
+        end
+        if info.prog == 0 and type(info.theme) == "string" then
+            info.prog = THEME_PROG[string.lower(info.theme)] or 0
         end
 
         local nd = snapByName[tostring(info.name):lower()]
@@ -2553,12 +2576,21 @@ local function boot()
             if checked >= limit then break end
         end
 
+        -- Uid asli yang dikirim StealTargetEvent bukan "AreaEgg_<guid>"; coba itu juga.
+        local hintN = 0
+        for hint in pairs(assetUidHints) do
+            hintN = hintN + 1
+            if hintN > 3 then break end
+            if probeRecord(guidOf(hint), nil, nil, verbose, hint) then found = found + 1 end
+        end
+
         clearInfoCache()
         galleryDirty = true
         gallerySig = ""
         if verbose then
             log(string.format("PROBE selesai: %d egg dicek, %d record ketemu. %s",
                 checked, found, debugSummary()))
+            log("Uid asli dari event: " .. hintN)
             if galleryRefresh then pcall(galleryRefresh, true) end
         end
         return found
@@ -3224,7 +3256,7 @@ local function boot()
     local pgInfo = ui:page("info", "Info", "ℹ️")
     pgInfo:section("Tentang")
     pgInfo:card({
-        {"Versi", "v5.7"},
+        {"Versi", "v5.8"},
         {"UI", "BFEUI (embedded)"},
         {"Player", lp.Name},
         {"Executor", executorName},
@@ -3385,7 +3417,11 @@ local function boot()
             return 0
         end
 
-        for _, name in ipairs({"Eggs: AreaEggCarryState", "Eggs: AreaEggClaimFeedback"}) do
+        for _, name in ipairs({
+            "Eggs: AreaEggCarryState",
+            "Eggs: AreaEggClaimFeedback",
+            "ActiveAssets: StealTargetEvent",
+        }) do
             local re = net:FindFirstChild(name, true)
             if re and re:IsA("RemoteEvent") then
                 local shown = 0
@@ -3425,12 +3461,17 @@ local function boot()
                                         end
                                     end
                                 end
-                                if string.find(name, "CarryState", 1, true) then
-                                    local uid = t.Uid or t.UID or t.EggUid
+                                if string.find(name, "CarryState", 1, true)
+                                    or string.find(name, "StealTarget", 1, true) then
+                                    local uid = t.Uid or t.UID or t.EggUid or t.AssetUid
                                     if type(uid) == "string" and uid ~= "" then
                                         local ukey = string.lower(guidOf(uid) or uid)
-                                        carryEventSeen = true
-                                        if truthy(t.IsCarrying) then
+                                        assetUidHints[ukey] = true
+                                        if string.find(name, "CarryState", 1, true) then
+                                            carryEventSeen = true
+                                        end
+                                        if string.find(name, "CarryState", 1, true)
+                                            and truthy(t.IsCarrying) then
                                             lastCarry = {
                                                 uid = ukey, area = t.AreaId,
                                                 category = type(cat) == "string" and cat or nil,

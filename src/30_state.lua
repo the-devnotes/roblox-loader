@@ -82,6 +82,7 @@
     local categoryImage = {}
     local uidCategory = {}
     local uidArea = {}
+    local assetUidHints = {} -- Uid asli dari StealTargetEvent (bukan nama model AreaEgg_)
     local probeDone = {}
     local probeAt = -1e9
     local toggleRefs = {}

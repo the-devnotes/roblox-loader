@@ -112,6 +112,13 @@
         return false
     end
 
+    -- Urutan katalog egg bertema di game (dari dump): makin belakang makin tinggi.
+    -- Dipakai hanya sebagai fallback kalau model tidak punya ProgressionOrder.
+    local THEME_PROG = {
+        penguin = 1, walrus = 2, bear = 3, tiger = 4, mammoth = 5,
+        king = 6, yeti = 7, dragon = 8, snake = 9, cerberus = 10,
+    }
+
     local GUID_PATTERN = "%x%x%x%x%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%-%x%x%x%x%x%x%x%x%x%x%x%x"
     local function guidOf(s)
         if s == nil then return nil end

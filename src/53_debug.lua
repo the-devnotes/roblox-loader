@@ -50,12 +50,21 @@
             if checked >= limit then break end
         end
 
+        -- Uid asli yang dikirim StealTargetEvent bukan "AreaEgg_<guid>"; coba itu juga.
+        local hintN = 0
+        for hint in pairs(assetUidHints) do
+            hintN = hintN + 1
+            if hintN > 3 then break end
+            if probeRecord(guidOf(hint), nil, nil, verbose, hint) then found = found + 1 end
+        end
+
         clearInfoCache()
         galleryDirty = true
         gallerySig = ""
         if verbose then
             log(string.format("PROBE selesai: %d egg dicek, %d record ketemu. %s",
                 checked, found, debugSummary()))
+            log("Uid asli dari event: " .. hintN)
             if galleryRefresh then pcall(galleryRefresh, true) end
         end
         return found

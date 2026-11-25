@@ -185,11 +185,6 @@
 
     -- Runtime snapshot: cadangan kalau AreaEggSnapshot tidak membawa rarity/value.
     local function refreshRuntimeSnapshot(verbose)
-        local rf = netRemote("Eggs: RequestRuntimeSnapshot")
-        if not rf or not rf:IsA("RemoteFunction") then
-            if verbose then log("RequestRuntimeSnapshot remote tidak ada.") end
-            return false
-        end
         local before = snapCount()
         local areaName = AREAS[state.area][1]
         local attempts = {
@@ -199,16 +194,30 @@
             { { AreaId = areaName } },
             { { Area = areaName } },
         }
-        for _, args in ipairs(attempts) do
-            local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
-            if ok and res then
-                indexSnapshot(res, 0)
-                noteSnap("RUNTIME RAW (" .. argSig(args) .. "): +" .. (snapCount() - before)
-                    .. " entri | " .. ser(res):sub(1, 900), verbose)
-                return true
+        -- Dua namespace snapshot: Eggs punya data egg, ActiveAssets punya data
+        -- aset aktif (termasuk target steal). Coba keduanya.
+        local any = false
+        for _, remoteName in ipairs({
+            "Eggs: RequestRuntimeSnapshot",
+            "ActiveAssets: RequestRuntimeSnapshot",
+        }) do
+            local rf = netRemote(remoteName)
+            if rf and rf:IsA("RemoteFunction") then
+                for _, args in ipairs(attempts) do
+                    local ok, res = pcall(function() return rf:InvokeServer(unpackArgs(args)) end)
+                    if ok and res then
+                        any = true
+                        indexSnapshot(res, 0)
+                        noteSnap("RUNTIME RAW [" .. remoteName .. "] (" .. argSig(args) .. "): +"
+                            .. (snapCount() - before) .. " entri | " .. ser(res):sub(1, 900), verbose)
+                        break
+                    end
+                end
+            elseif verbose then
+                log(remoteName .. " remote tidak ada.")
             end
         end
-        return false
+        return any
     end
 
     -- Probe RequestEggRecord untuk satu egg/kategori. Di-cache supaya tidak spam server.
@@ -247,6 +256,9 @@
             attempts[#attempts + 1] = { id }
             attempts[#attempts + 1] = { { Uid = id } }
             attempts[#attempts + 1] = { { uid = id } }
+            attempts[#attempts + 1] = { { Uuid = id } }
+            attempts[#attempts + 1] = { { AssetUid = id } }
+            attempts[#attempts + 1] = { { assetUid = id } }
             if areaName then attempts[#attempts + 1] = { areaName, id } end
             attempts[#attempts + 1] = { state.area, id }
         end

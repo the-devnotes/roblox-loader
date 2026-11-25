@@ -1,5 +1,12 @@
 # TODO / handoff cepat
 
+## v5.8 — sumber data cadangan
+- Log user memastikan `RequestEggRecord` mengembalikan nil untuk semua `AreaEgg_<guid>` (semua format argumen). Remote itu bukan sumber data egg di plot; kemungkinan untuk aset aktif/pet yang sudah dimiliki.
+- `refreshRuntimeSnapshot()` sekarang memanggil dua namespace: `Eggs: RequestRuntimeSnapshot` dan `ActiveAssets: RequestRuntimeSnapshot`, dengan log `RUNTIME RAW [<remote>] (...)`.
+- Hook pasif `ActiveAssets: StealTargetEvent` ditambahkan. Uid asli dari event ini disimpan di `assetUidHints` dan ikut diprobe (maks 3). `carryEventSeen`/`lastCarry` tetap HANYA diubah oleh `AreaEggCarryState` supaya alur steal tidak berubah.
+- Fallback progression untuk egg bertema: `THEME_PROG` (penguin=1 … cerberus=10) dari urutan katalog di dump, dipakai hanya kalau model tidak punya `ProgressionOrder`.
+- `probeRecord` juga mencoba `{Uuid=...}`, `{AssetUid=...}`, `{assetUid=...}`.
+
 ## v5.7 — probe & identitas egg
 - Log API dumper tidak berisi argumen pemanggilan remote: `_lemonadeUniqueId` pada semua instance adalah marker alat dump, bukan argumen game. Jadi format argumen masih harus dilihat dari log `RECORD ...` / `SNAPSHOT RAW ...` di game.
 - `Egg`/`egg`/`Egg #n` sekarang dianggap nama generik (`genericEggName()` di `32_helpers.lua`). Tidak disimpan ke `uidCategory`, tidak dipakai sebagai kategori probe. Probe sekarang UID-first (`uid:AreaEgg_<guid>`), bukan `cat:egg`.

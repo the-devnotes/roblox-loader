@@ -94,7 +94,11 @@
             return 0
         end
 
-        for _, name in ipairs({"Eggs: AreaEggCarryState", "Eggs: AreaEggClaimFeedback"}) do
+        for _, name in ipairs({
+            "Eggs: AreaEggCarryState",
+            "Eggs: AreaEggClaimFeedback",
+            "ActiveAssets: StealTargetEvent",
+        }) do
             local re = net:FindFirstChild(name, true)
             if re and re:IsA("RemoteEvent") then
                 local shown = 0
@@ -134,12 +138,17 @@
                                         end
                                     end
                                 end
-                                if string.find(name, "CarryState", 1, true) then
-                                    local uid = t.Uid or t.UID or t.EggUid
+                                if string.find(name, "CarryState", 1, true)
+                                    or string.find(name, "StealTarget", 1, true) then
+                                    local uid = t.Uid or t.UID or t.EggUid or t.AssetUid
                                     if type(uid) == "string" and uid ~= "" then
                                         local ukey = string.lower(guidOf(uid) or uid)
-                                        carryEventSeen = true
-                                        if truthy(t.IsCarrying) then
+                                        assetUidHints[ukey] = true
+                                        if string.find(name, "CarryState", 1, true) then
+                                            carryEventSeen = true
+                                        end
+                                        if string.find(name, "CarryState", 1, true)
+                                            and truthy(t.IsCarrying) then
                                             lastCarry = {
                                                 uid = ukey, area = t.AreaId,
                                                 category = type(cat) == "string" and cat or nil,

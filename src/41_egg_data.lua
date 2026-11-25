@@ -287,6 +287,9 @@
             local r = rarityFromText(info.name)
             if r > 0 then info.rar = r end
         end
+        if info.prog == 0 and type(info.theme) == "string" then
+            info.prog = THEME_PROG[string.lower(info.theme)] or 0
+        end
 
         local nd = snapByName[tostring(info.name):lower()]
         if not nd and disp then nd = snapByName[tostring(disp):lower()] end
