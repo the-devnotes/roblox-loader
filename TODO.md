@@ -1,5 +1,12 @@
 # TODO / handoff cepat
 
+## v5.9b — RarityNumber asli dari log user
+- Log `RARITY MODULE: {Rarities={Exclusive={RarityNumber=7,...}, BrainrotGod={RarityNumber=6,...}}}` membuktikan urutan rarity game ada di field `RarityNumber`, bukan tebakan `common/uncommon/...`.
+- `readRarityModule()` sekarang membangun `catalog.rarityNumber` dari `data.Rarities` (kunci, `_id`, `DisplayName`) dan memperpanjang `RARITY`/`RARITY_LABEL`/`RARITY_NAMES` sampai `RarityNumber` maksimal.
+- `rarityOf()` dan `rarityFromText()` memprioritaskan `catalog.rarityNumber` sebelum `RARITY_ALIAS`.
+- `catalog.read()` sekarang dibungkus `pcall`, tiap modul dicoba dengan `pcall`, dan ada log `CATALOG <n> [true/false]` untuk 3 modul pertama + `Katalog dibaca: ...`.
+- Hook event ditambah: `AreaEggUpdated`, `AreaEggBatchUpdated`, `RuntimeOwnerUpdated` (Eggs & ActiveAssets). Probe snapshot ditambah `ActiveAssets: RequestStealTarget` dan `Eggs: RequestAreaEggRareSpawnPresentations`.
+
 ## v5.9 — katalog client sebagai sumber metadata utama
 - Dump membuktikan `ReplicatedStorage.Directory._Index` berisi ModuleScript per pet (`Penguin`, `FennecFox`, `Ice Dragon`, …) dan `ReplicatedStorage.Directory.Rarity._Index` berisi tier (`Basic`, `Rare`, `Mythical`, `Exclusive`, `Secret`, …). Modul ini bisa di-`require()` dari client, jadi tidak perlu menebak argumen `RequestEggRecord`.
 - File baru `src/42_catalog.lua` membaca `_Index`, `Directory.Assets`, dan `BaseConfigs.Default`, lalu mengisi `catalog.byKey` + `categoryRarity/Prog/Value/Weight/Chance/Image`.
