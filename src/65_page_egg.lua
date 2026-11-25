@@ -204,6 +204,14 @@
         ui:toast("Probe record semua area...")
         task.spawn(function() debugProbeAll(true) end)
     end, { variant = "primary" })
+    pgEgg:button("Baca Katalog (client)", function()
+        ui:toast("Membaca katalog ReplicatedStorage...")
+        task.spawn(function()
+            local n = catalog.read(true)
+            ui:toast("Katalog: " .. n .. " modul dibaca.", n > 0 and "ok" or "warn")
+            if galleryRefresh then galleryRefresh(true) end
+        end)
+    end)
     pgEgg:button("Dump Semua Egg", function() debugDumpAll() end)
 
     local galleryBox = pgEgg:frame(120)

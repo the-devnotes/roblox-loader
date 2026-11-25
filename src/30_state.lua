@@ -17,8 +17,8 @@
 
     local SORTS = {"Auto (terbaik)", "Rarity", "Value", "Progression", "Terdekat", "Berat (kg)"}
     local RARITY = {"common", "uncommon", "rare", "epic", "legendary", "mythic", "secret", "divine", "celestial", "godly", "transcendent", "cosmic", "eternal"}
-    local RARITY_LABEL = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Divine", "Celestial", "Godly", "Transcendent", "Cosmic", "Eternal"}
-    local RARITY_NAMES = {"Semua", "Uncommon+", "Rare+", "Epic+", "Legendary+", "Mythic+", "Secret+", "Divine+", "Celestial+", "Godly+", "Transcendent+", "Cosmic+", "Eternal+"}
+    local RARITY_LABEL = {"Basic", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Divine", "Exclusive", "Exotic", "Superior", "Cosmic", "Eternal"}
+    local RARITY_NAMES = {"Semua", "Uncommon+", "Rare+", "Epic+", "Legendary+", "Mythic+", "Secret+", "Divine+", "Exclusive+", "Exotic+", "Superior+", "Cosmic+", "Eternal+"}
     local RARITY_COLOR = {
         Color3.fromRGB(168, 176, 198),
         Color3.fromRGB(112, 205, 145),
@@ -44,9 +44,10 @@
         secret = 7, hidden = 7,
         divine = 8, heavenly = 8,
         celestial = 9, exclusive = 9,
-        godly = 10, ["god tier"] = 10, immortal = 10,
-        transcendent = 11, transendent = 11,
-        cosmic = 12, eternal = 13,
+        exotic = 10, godly = 10, ["god tier"] = 10, immortal = 10, rainbow = 10,
+        superior = 11, transcendent = 11, transendent = 11,
+        cosmic = 12,
+        eternal = 13, brainrotgod = 13, ["brainrot god"] = 13, limited = 13,
         ultimate = 13, supreme = 13, fabled = 13,
     }
     local VALUE_STEPS = {0, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e12}
@@ -83,6 +84,18 @@
     local uidCategory = {}
     local uidArea = {}
     local assetUidHints = {} -- Uid asli dari StealTargetEvent (bukan nama model AreaEgg_)
+    -- Katalog metadata dari ReplicatedStorage.Directory._Index (diisi oleh 42_catalog).
+    local catalog = {
+        at = -1e9, count = 0, err = 0, byKey = {}, rarRaw = nil, read = nil,
+        compactKey = function(s)
+            if type(s) ~= "string" then return nil end
+            local v = s:lower():gsub("^%s+", ""):gsub("%s+$", "")
+            v = v:gsub(" egg$", "")
+            v = v:gsub("[^%w]", "")
+            if v == "" then return nil end
+            return v
+        end,
+    }
     local probeDone = {}
     local probeAt = -1e9
     local toggleRefs = {}

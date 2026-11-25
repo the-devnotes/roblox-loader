@@ -1029,8 +1029,8 @@ local function boot()
 
     local SORTS = {"Auto (terbaik)", "Rarity", "Value", "Progression", "Terdekat", "Berat (kg)"}
     local RARITY = {"common", "uncommon", "rare", "epic", "legendary", "mythic", "secret", "divine", "celestial", "godly", "transcendent", "cosmic", "eternal"}
-    local RARITY_LABEL = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Divine", "Celestial", "Godly", "Transcendent", "Cosmic", "Eternal"}
-    local RARITY_NAMES = {"Semua", "Uncommon+", "Rare+", "Epic+", "Legendary+", "Mythic+", "Secret+", "Divine+", "Celestial+", "Godly+", "Transcendent+", "Cosmic+", "Eternal+"}
+    local RARITY_LABEL = {"Basic", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Secret", "Divine", "Exclusive", "Exotic", "Superior", "Cosmic", "Eternal"}
+    local RARITY_NAMES = {"Semua", "Uncommon+", "Rare+", "Epic+", "Legendary+", "Mythic+", "Secret+", "Divine+", "Exclusive+", "Exotic+", "Superior+", "Cosmic+", "Eternal+"}
     local RARITY_COLOR = {
         Color3.fromRGB(168, 176, 198),
         Color3.fromRGB(112, 205, 145),
@@ -1056,9 +1056,10 @@ local function boot()
         secret = 7, hidden = 7,
         divine = 8, heavenly = 8,
         celestial = 9, exclusive = 9,
-        godly = 10, ["god tier"] = 10, immortal = 10,
-        transcendent = 11, transendent = 11,
-        cosmic = 12, eternal = 13,
+        exotic = 10, godly = 10, ["god tier"] = 10, immortal = 10, rainbow = 10,
+        superior = 11, transcendent = 11, transendent = 11,
+        cosmic = 12,
+        eternal = 13, brainrotgod = 13, ["brainrot god"] = 13, limited = 13,
         ultimate = 13, supreme = 13, fabled = 13,
     }
     local VALUE_STEPS = {0, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e12}
@@ -1095,6 +1096,18 @@ local function boot()
     local uidCategory = {}
     local uidArea = {}
     local assetUidHints = {} -- Uid asli dari StealTargetEvent (bukan nama model AreaEgg_)
+    -- Katalog metadata dari ReplicatedStorage.Directory._Index (diisi oleh 42_catalog).
+    local catalog = {
+        at = -1e9, count = 0, err = 0, byKey = {}, rarRaw = nil, read = nil,
+        compactKey = function(s)
+            if type(s) ~= "string" then return nil end
+            local v = s:lower():gsub("^%s+", ""):gsub("%s+$", "")
+            v = v:gsub(" egg$", "")
+            v = v:gsub("[^%w]", "")
+            if v == "" then return nil end
+            return v
+        end,
+    }
     local probeDone = {}
     local probeAt = -1e9
     local toggleRefs = {}
@@ -1592,7 +1605,8 @@ local function boot()
             or kk == "assetcategory" or kk == "petdisplayname" or kk == "petname"
             or kk == "assetname" or kk == "category" then
             if type(value) == "string" and value ~= "" and #value < 48 then info.name = value end
-        elseif kk:find("progression", 1, true) or kk:find("progorder", 1, true) or kk == "order" or kk == "level" or kk == "stage" then
+        elseif kk:find("progression", 1, true) or kk:find("progorder", 1, true) or kk == "order" or kk == "level" or kk == "stage"
+            or kk:find("importnumber", 1, true) then
             local n = tonumber(value)
             if n and n > info.prog then info.prog = n end
         elseif kk:find("chance", 1, true) or kk:find("odds", 1, true) or kk:find("probability", 1, true) or kk:find("luck", 1, true) then
@@ -1864,6 +1878,28 @@ local function boot()
             info.prog = THEME_PROG[string.lower(info.theme)] or 0
         end
 
+        -- Katalog client (ReplicatedStorage.Directory._Index) adalah sumber paling
+        -- akurat untuk rarity/value/weight. Probe Record sudah terbukti selalu nil.
+        local function applyCatalog(name)
+            if type(name) ~= "string" or name == "" then return end
+            local e = catalog.byKey[string.lower(name)] or catalog.byKey[catalog.compactKey(name)]
+            if not e then return end
+            if info.name == "" and not genericEggName(e.name) then info.name = e.name end
+            if e.rar > info.rar then info.rar = e.rar end
+            if e.prog > info.prog then info.prog = e.prog end
+            if e.val > info.val then info.val = e.val end
+            if e.weight > info.weight then info.weight = e.weight end
+            if e.chance > info.chance then info.chance = e.chance end
+            if e.imageId and not info.imageId then info.imageId = e.imageId end
+            if e.event then info.event = true end
+        end
+        applyCatalog(info.name)
+        applyCatalog(petDisp)
+        applyCatalog(disp)
+        applyCatalog(modelName)
+        applyCatalog(theme)
+        applyCatalog(m.Name)
+
         local nd = snapByName[tostring(info.name):lower()]
         if not nd and disp then nd = snapByName[tostring(disp):lower()] end
         if not nd and theme then nd = snapByName[tostring(theme):lower()] end
@@ -2101,6 +2137,189 @@ local function boot()
         return best, #filtered
     end
 
+    --[[ ===================== 10. KATALOG REPLICATEDSTORAGE ===================== ]]
+    -- Metadata egg (rarity/value/weight/progression) ada di module client:
+    --   ReplicatedStorage.Directory._Index.<NamaPet>
+    --   ReplicatedStorage.Directory.Rarity._Index.<NamaTier>
+    -- Jadi tidak perlu menebak argumen RequestEggRecord yang selalu nil.
+    -- Semua helper dibungkus blok `do` supaya tidak menambah local di boot
+    -- (luac/Luau punya batas 200 local per function).
+    do
+        local function safeRequireModule(mod)
+            local co = coroutine.create(function()
+                return require(mod)
+            end)
+            local ok, res = coroutine.resume(co)
+            if coroutine.status(co) == "suspended" then return false, "yield" end
+            return ok, res
+        end
+
+        local function addCatalogKeys(out, s)
+            if type(s) ~= "string" then return end
+            s = s:gsub("^%s+", ""):gsub("%s+$", "")
+            if s == "" or genericEggName(s) then return end
+            local raw = string.lower(s)
+            out[raw] = true
+            local c = catalog.compactKey(s)
+            if c then out[c] = true end
+        end
+
+        local function catalogInfoFromData(mod, data)
+            local info = {
+                name = tostring(mod.Name),
+                theme = nil,
+                prog = 0,
+                themed = false,
+                event = false,
+                weight = 0,
+                imageId = nil,
+                rar = 0,
+                rarNum = 0,
+                val = 0,
+                chance = 0,
+                texts = {},
+                attrs = {},
+                source = "catalog",
+            }
+            pcall(scanTable, info, data, 0)
+            if genericEggName(info.name) then info.name = tostring(mod.Name) end
+            if info.rar == 0 then info.rar = rarityFromText(info.name) end
+
+            local keys = {}
+            addCatalogKeys(keys, mod.Name)
+            addCatalogKeys(keys, info.name)
+            for _, f in ipairs({ "PetDisplayName", "DisplayName", "Name", "AssetCategory", "Category" }) do
+                local v = data[f]
+                if type(v) == "string" then addCatalogKeys(keys, v) end
+            end
+            return info, keys
+        end
+
+        local function catalogDir()
+            local rs = ReplicatedStorage
+            return rs:FindFirstChild("Directory") or rs:FindFirstChild("Directory", true)
+        end
+
+        local function skipCatalogKey(k)
+            return k == "BaseConfigs" or k == "Types" or k == "Interface" or k == "Schema"
+                or k == "Private" or k == "_Index" or k == "Default"
+        end
+
+        local function storeCatalogEntry(name, data, verbose)
+            local info, keys = catalogInfoFromData({ Name = name }, data)
+            for _, k in pairs(keys) do catalog.byKey[k] = info end
+            return info, keys
+        end
+
+        -- Assets / BaseConfigs.Default sering berisi tabel keyed by nama pet,
+        -- bukan ModuleScript per pet. Baca juga isinya supaya pet baru ikut masuk.
+        local function readCatalogTables(verbose)
+            local dir = catalogDir()
+            if not dir then return 0 end
+            local n = 0
+            for _, modName in ipairs({ "Assets", "BaseConfigs.Default" }) do
+                local mod = dir:FindFirstChild(modName, true)
+                if mod and mod:IsA("ModuleScript") then
+                    local ok, data = safeRequireModule(mod)
+                    if ok and type(data) == "table" then
+                        for k, v in pairs(data) do
+                            if type(k) == "string" and type(v) == "table" and not skipCatalogKey(k) then
+                                storeCatalogEntry(k, v, verbose)
+                                n = n + 1
+                            end
+                        end
+                        for key, v in pairs(data) do
+                            if type(key) == "string" and type(v) == "table" and key == "_Index" then
+                                for k, sub in pairs(v) do
+                                    if type(k) == "string" and type(sub) == "table" and not skipCatalogKey(k) then
+                                        storeCatalogEntry(k, sub, verbose)
+                                        n = n + 1
+                                    end
+                                end
+                            end
+                        end
+                        if verbose then
+                            log("CATALOG TABLE " .. modName .. ": " .. ser(data):sub(1, 900))
+                        end
+                    end
+                end
+            end
+            return n
+        end
+
+        local function readRarityModule(verbose)
+            if not verbose then return end
+            local dir = catalogDir()
+            local mod = dir and dir:FindFirstChild("Rarity", true)
+            if not mod or not mod:IsA("ModuleScript") then
+                log("Katalog rarity: module tidak ada.")
+                return
+            end
+            local ok, data = safeRequireModule(mod)
+            catalog.rarRaw = ok and data or nil
+            log("RARITY MODULE: " .. (ok and ser(data):sub(1, 1200) or tostring(data)))
+        end
+
+        local function applyCatalogToMaps()
+            for key, e in pairs(catalog.byKey) do
+                if e.rar > (categoryRarity[key] or 0) then categoryRarity[key] = e.rar end
+                if e.prog > (categoryProg[key] or 0) then categoryProg[key] = e.prog end
+                if e.val > (categoryValue[key] or 0) then categoryValue[key] = e.val end
+                if e.weight > (categoryWeight[key] or 0) then categoryWeight[key] = e.weight end
+                if e.chance > (categoryChance[key] or 0) then categoryChance[key] = e.chance end
+                if e.imageId and not categoryImage[key] then categoryImage[key] = e.imageId end
+            end
+        end
+
+        catalog.read = function(verbose)
+            if not verbose and catalog.count > 0 and os.clock() - catalog.at < 45 then
+                return catalog.count
+            end
+
+            local dir = catalogDir()
+            local idx = dir and dir:FindFirstChild("_Index", true)
+            if not idx then
+                if verbose then log("Katalog tidak ada: ReplicatedStorage.Directory._Index.") end
+                catalog.at = os.clock()
+                return 0
+            end
+
+            local n, errN = 0, 0
+            catalog.byKey = {}
+            readRarityModule(verbose)
+            n = n + readCatalogTables(verbose)
+
+            for _, mod in ipairs(idx:GetChildren()) do
+                if mod:IsA("ModuleScript") then
+                    local ok, data = safeRequireModule(mod)
+                    if ok and type(data) == "table" then
+                        local info, keys = catalogInfoFromData(mod, data)
+                        for _, k in pairs(keys) do catalog.byKey[k] = info end
+                        n = n + 1
+                        if verbose and n <= 3 then
+                            log("CATALOG " .. mod.Name .. ": " .. ser(data):sub(1, 700))
+                        end
+                    else
+                        errN = errN + 1
+                    end
+                end
+            end
+
+            catalog.at = os.clock()
+            catalog.count = n
+            catalog.err = errN
+            applyCatalogToMaps()
+            galleryDirty = true
+            gallerySig = ""
+
+            if verbose then
+                local keyCount = 0
+                for _ in pairs(catalog.byKey) do keyCount = keyCount + 1 end
+                log(string.format("Katalog dibaca: %d modul, %d gagal, %d kunci.", n, errN, keyCount))
+            end
+            return n
+        end
+    end
     --[[ ===================== 10. BASE & AREA ===================== ]]
     local savedBase = nil
     do
@@ -2559,6 +2778,7 @@ local function boot()
 
         if verbose or os.clock() - probeAt > 45 then
             probeAt = os.clock()
+            pcall(catalog.read, verbose)
             pcall(refreshRuntimeSnapshot, false)
         end
 
@@ -2597,6 +2817,7 @@ local function boot()
     end
 
     local function debugDumpAll()
+        pcall(catalog.read, false)
         local eggs = areaEggs(true)
         log("== DEBUG SEMUA AREA: " .. #eggs .. " egg ==")
         for idx, e in ipairs(eggs) do
@@ -3058,6 +3279,14 @@ local function boot()
         ui:toast("Probe record semua area...")
         task.spawn(function() debugProbeAll(true) end)
     end, { variant = "primary" })
+    pgEgg:button("Baca Katalog (client)", function()
+        ui:toast("Membaca katalog ReplicatedStorage...")
+        task.spawn(function()
+            local n = catalog.read(true)
+            ui:toast("Katalog: " .. n .. " modul dibaca.", n > 0 and "ok" or "warn")
+            if galleryRefresh then galleryRefresh(true) end
+        end)
+    end)
     pgEgg:button("Dump Semua Egg", function() debugDumpAll() end)
 
     local galleryBox = pgEgg:frame(120)
@@ -3256,14 +3485,14 @@ local function boot()
     local pgInfo = ui:page("info", "Info", "ℹ️")
     pgInfo:section("Tentang")
     pgInfo:card({
-        {"Versi", "v5.8"},
+        {"Versi", "v5.9"},
         {"UI", "BFEUI (embedded)"},
         {"Player", lp.Name},
         {"Executor", executorName},
     })
     pgInfo:note("UI ini memakai library mini BFEUI yang ditanam di script, jadi tidak bergantung pada HttpGet. Fitur dipisah per halaman lewat sidebar.")
     pgInfo:note("Halaman Egg menampilkan kartu egg: gambar (preview 3D), value, berat (kg), progression, rarity, dan tombol Steal khusus egg itu.")
-    pgInfo:note("Nama/rarity egg yang tidak punya attribute diisi dari snapshot server + event CarryState/ClaimFeedback setelah egg pertama diambil. Klik 'Dump 1 Egg' untuk data mentah.")
+    pgInfo:note("Metadata rarity/value/weight diambil dari katalog client ReplicatedStorage.Directory._Index (tombol 'Baca Katalog'). Snapshot + CarryState/ClaimFeedback tetap jadi cadangan.")
 
     pgInfo:section("Cara Pakai")
     pgInfo:note("1) Halaman Area: pilih area lalu Set Base. 2) Halaman Filter: atur urutan & filter Best Egg. 3) Halaman Steal: aktifkan Auto Steal. 4) Halaman Auto: aktifkan Hatch/Sell kalau perlu.")
@@ -3521,6 +3750,8 @@ local function boot()
             task.spawn(function()
                 task.wait(5)
                 if not running then return end
+                -- Baca katalog client sekali setelah UI tenang, bukan saat entry.
+                pcall(catalog.read, false)
                 pcall(debugProbeAll, false)
                 if ui.current == "home" and updateHome then updateHome() end
             end)

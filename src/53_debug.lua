@@ -33,6 +33,7 @@
 
         if verbose or os.clock() - probeAt > 45 then
             probeAt = os.clock()
+            pcall(catalog.read, verbose)
             pcall(refreshRuntimeSnapshot, false)
         end
 
@@ -71,6 +72,7 @@
     end
 
     local function debugDumpAll()
+        pcall(catalog.read, false)
         local eggs = areaEggs(true)
         log("== DEBUG SEMUA AREA: " .. #eggs .. " egg ==")
         for idx, e in ipairs(eggs) do

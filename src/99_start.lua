@@ -20,6 +20,8 @@
             task.spawn(function()
                 task.wait(5)
                 if not running then return end
+                -- Baca katalog client sekali setelah UI tenang, bukan saat entry.
+                pcall(catalog.read, false)
                 pcall(debugProbeAll, false)
                 if ui.current == "home" and updateHome then updateHome() end
             end)

@@ -1,5 +1,14 @@
 # TODO / handoff cepat
 
+## v5.9 — katalog client sebagai sumber metadata utama
+- Dump membuktikan `ReplicatedStorage.Directory._Index` berisi ModuleScript per pet (`Penguin`, `FennecFox`, `Ice Dragon`, …) dan `ReplicatedStorage.Directory.Rarity._Index` berisi tier (`Basic`, `Rare`, `Mythical`, `Exclusive`, `Secret`, …). Modul ini bisa di-`require()` dari client, jadi tidak perlu menebak argumen `RequestEggRecord`.
+- File baru `src/42_catalog.lua` membaca `_Index`, `Directory.Assets`, dan `BaseConfigs.Default`, lalu mengisi `catalog.byKey` + `categoryRarity/Prog/Value/Weight/Chance/Image`.
+- `eggInfo()` (41) sekarang menggabungkan katalog memakai `PetDisplayName`, `DisplayName`, `PetModelName`, `EggTheme`, dan `m.Name`. `scanKV()` juga mengenali `OriginalImportNumber`.
+- Rarity label diselaraskan: `Basic / Uncommon / Rare / Epic / Legendary / Mythic / Secret / Divine / Exclusive / Exotic / Superior / Cosmic / Eternal`. Alias ditambah: `mythical`, `exotic`, `superior`, `brainrotgod`, `limited`, `rainbow`.
+- Tombol baru **Egg -> Baca Katalog (client)**. Probe otomatis juga memanggil katalog sekali setelah ±5 detik, bukan saat first entry.
+- Helper katalog dibungkus `do ... end` dan disimpan sebagai field `catalog.read` supaya tidak menambah local di `boot()` (batas luac 200 local/function).
+- Perlu dicek di game: apakah `RARITY MODULE:` dan `CATALOG <nama>:` memperlihatkan struktur asli. Kalau tier order beda, tinggal sesuaikan `RARITY_ALIAS`.
+
 ## v5.8 — sumber data cadangan
 - Log user memastikan `RequestEggRecord` mengembalikan nil untuk semua `AreaEgg_<guid>` (semua format argumen). Remote itu bukan sumber data egg di plot; kemungkinan untuk aset aktif/pet yang sudah dimiliki.
 - `refreshRuntimeSnapshot()` sekarang memanggil dua namespace: `Eggs: RequestRuntimeSnapshot` dan `ActiveAssets: RequestRuntimeSnapshot`, dengan log `RUNTIME RAW [<remote>] (...)`.

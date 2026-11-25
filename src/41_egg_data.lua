@@ -19,7 +19,8 @@
             or kk == "assetcategory" or kk == "petdisplayname" or kk == "petname"
             or kk == "assetname" or kk == "category" then
             if type(value) == "string" and value ~= "" and #value < 48 then info.name = value end
-        elseif kk:find("progression", 1, true) or kk:find("progorder", 1, true) or kk == "order" or kk == "level" or kk == "stage" then
+        elseif kk:find("progression", 1, true) or kk:find("progorder", 1, true) or kk == "order" or kk == "level" or kk == "stage"
+            or kk:find("importnumber", 1, true) then
             local n = tonumber(value)
             if n and n > info.prog then info.prog = n end
         elseif kk:find("chance", 1, true) or kk:find("odds", 1, true) or kk:find("probability", 1, true) or kk:find("luck", 1, true) then
@@ -290,6 +291,28 @@
         if info.prog == 0 and type(info.theme) == "string" then
             info.prog = THEME_PROG[string.lower(info.theme)] or 0
         end
+
+        -- Katalog client (ReplicatedStorage.Directory._Index) adalah sumber paling
+        -- akurat untuk rarity/value/weight. Probe Record sudah terbukti selalu nil.
+        local function applyCatalog(name)
+            if type(name) ~= "string" or name == "" then return end
+            local e = catalog.byKey[string.lower(name)] or catalog.byKey[catalog.compactKey(name)]
+            if not e then return end
+            if info.name == "" and not genericEggName(e.name) then info.name = e.name end
+            if e.rar > info.rar then info.rar = e.rar end
+            if e.prog > info.prog then info.prog = e.prog end
+            if e.val > info.val then info.val = e.val end
+            if e.weight > info.weight then info.weight = e.weight end
+            if e.chance > info.chance then info.chance = e.chance end
+            if e.imageId and not info.imageId then info.imageId = e.imageId end
+            if e.event then info.event = true end
+        end
+        applyCatalog(info.name)
+        applyCatalog(petDisp)
+        applyCatalog(disp)
+        applyCatalog(modelName)
+        applyCatalog(theme)
+        applyCatalog(m.Name)
 
         local nd = snapByName[tostring(info.name):lower()]
         if not nd and disp then nd = snapByName[tostring(disp):lower()] end

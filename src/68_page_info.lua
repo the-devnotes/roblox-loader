@@ -29,14 +29,14 @@
     local pgInfo = ui:page("info", "Info", "ℹ️")
     pgInfo:section("Tentang")
     pgInfo:card({
-        {"Versi", "v5.8"},
+        {"Versi", "v5.9"},
         {"UI", "BFEUI (embedded)"},
         {"Player", lp.Name},
         {"Executor", executorName},
     })
     pgInfo:note("UI ini memakai library mini BFEUI yang ditanam di script, jadi tidak bergantung pada HttpGet. Fitur dipisah per halaman lewat sidebar.")
     pgInfo:note("Halaman Egg menampilkan kartu egg: gambar (preview 3D), value, berat (kg), progression, rarity, dan tombol Steal khusus egg itu.")
-    pgInfo:note("Nama/rarity egg yang tidak punya attribute diisi dari snapshot server + event CarryState/ClaimFeedback setelah egg pertama diambil. Klik 'Dump 1 Egg' untuk data mentah.")
+    pgInfo:note("Metadata rarity/value/weight diambil dari katalog client ReplicatedStorage.Directory._Index (tombol 'Baca Katalog'). Snapshot + CarryState/ClaimFeedback tetap jadi cadangan.")
 
     pgInfo:section("Cara Pakai")
     pgInfo:note("1) Halaman Area: pilih area lalu Set Base. 2) Halaman Filter: atur urutan & filter Best Egg. 3) Halaman Steal: aktifkan Auto Steal. 4) Halaman Auto: aktifkan Hatch/Sell kalau perlu.")
