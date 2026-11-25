@@ -161,8 +161,28 @@
                                     end
                                 end
 
-                                -- AreaEggUpdated mengirim AssetCategory + BoundsCFrame tanpa Uid.
-                                -- Cocokkan lewat posisi egg terdekat di area yang sama.
+                                -- AreaEggUpdated kadang mengirim Uid="AreaEgg_<guid>" langsung.
+                                -- Ini paling akurat: tidak perlu menebak lewat posisi.
+                                local areaUid = t.Uid or t.UID or t.EggUid
+                                if type(areaUid) == "string" and string.find(areaUid, "AreaEgg", 1, true) then
+                                    local g = guidOf(areaUid)
+                                    if g then
+                                        local ukey = string.lower(g)
+                                        snapCache[ukey] = t
+                                        snapMeta[ukey] = t
+                                        if type(cat) == "string" and cat ~= "" then
+                                            uidCategory[ukey] = string.lower(cat)
+                                        end
+                                        if type(t.AreaId) == "string" then uidArea[ukey] = t.AreaId end
+                                        if rar > 0 and type(cat) == "string" then
+                                            categoryRarity[string.lower(cat)] = rar
+                                        end
+                                        changed = true
+                                    end
+                                end
+
+                                -- AreaEggUpdated juga bisa mengirim AssetCategory + BoundsCFrame
+                                -- tanpa Uid. Cocokkan lewat posisi egg terdekat di area yang sama.
                                 if type(cat) == "string" and cat ~= ""
                                     and string.find(name, "AreaEgg", 1, true) then
                                     local pos = vecOf(t.BoundsCFrame or t.CFrame or t.Position)

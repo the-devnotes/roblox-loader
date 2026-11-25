@@ -1,5 +1,11 @@
 # TODO / handoff cepat
 
+## v5.9e — Uid langsung + hitungan katalog
+- `AreaEggUpdated` ternyata mengirim `Uid="AreaEgg_<guid>"` pada sebagian event. Script sekarang memakai Uid itu langsung (lebih akurat daripada cocokkan posisi `BoundsCFrame`).
+- `Egg_<guid>` dari `RuntimeOwnerUpdated` tetap dipetakan langsung ke `uidCategory[guid]` + `snapCache[guid]`.
+- Bug `Katalog dibaca: ... 1 kunci` masih muncul walaupun log `CATALOG KEYS` menunjukkan +3/+4 kunci. Counter `catalog.keyCount` sekarang dihitung manual saat menulis `catalog.byKey`, dan `catalog.entries` ikut diisi dari tabel `Assets`. Log `Katalog entri: N` ditambahkan untuk verify.
+- Fallback `catalog.entries` di `eggInfo()` tetap dipakai kalau `byKey` cuma berisi 1 kunci.
+
 ## v5.9d — hubungkan event ke katalog
 - Log membuktikan `Eggs: RuntimeOwnerUpdated` mengirim `Records={Egg_<guid>={AssetCategory="Eternal Lunar Dragon", ...}}` dan `AreaEggUpdated` mengirim `AssetCategory` + `BoundsCFrame` tanpa Uid.
 - `walkEvent()` sekarang meneruskan parent key. Record `Egg_<guid>` dipetakan langsung ke `uidCategory[guid]` + `snapCache[guid]`, sehingga `eggInfo()` bisa mencari kategori itu di katalog `_Index`.

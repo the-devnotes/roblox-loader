@@ -1098,7 +1098,7 @@ local function boot()
     local assetUidHints = {} -- Uid asli dari StealTargetEvent (bukan nama model AreaEgg_)
     -- Katalog metadata dari ReplicatedStorage.Directory._Index (diisi oleh 42_catalog).
     local catalog = {
-        at = -1e9, count = 0, err = 0, byKey = {}, entries = {}, rarRaw = nil, read = nil,
+        at = -1e9, count = 0, err = 0, byKey = {}, entries = {}, keyCount = 0, rarRaw = nil, read = nil,
         rarityNumber = {}, rarityLabel = {},
         compactKey = function(s)
             if type(s) ~= "string" then return nil end
@@ -2244,7 +2244,11 @@ local function boot()
 
         local function storeCatalogEntry(name, data, verbose)
             local info, keys = catalogInfoFromData({ Name = name }, data)
-            for _, k in pairs(keys) do catalog.byKey[k] = info end
+            for _, k in pairs(keys) do
+                if not catalog.byKey[k] then catalog.keyCount = catalog.keyCount + 1 end
+                catalog.byKey[k] = info
+            end
+            catalog.entries[#catalog.entries + 1] = info
             return info, keys
         end
 
@@ -2356,6 +2360,7 @@ local function boot()
             local n, errN, tried = 0, 0, 0
             catalog.byKey = {}
             catalog.entries = {}
+            catalog.keyCount = 0
             local okRarity, errRarity = pcall(readRarityModule, verbose)
             if not okRarity and verbose then log("RARITY error: " .. tostring(errRarity)) end
 
@@ -2379,6 +2384,7 @@ local function boot()
                         if okEntry then
                             local added = 0
                             for _, k in pairs(keys) do
+                                if not catalog.byKey[k] then catalog.keyCount = catalog.keyCount + 1 end
                                 catalog.byKey[k] = info
                                 added = added + 1
                             end
@@ -2405,10 +2411,9 @@ local function boot()
             gallerySig = ""
 
             if verbose then
-                local keyCount = 0
-                for _ in pairs(catalog.byKey) do keyCount = keyCount + 1 end
+                log("Katalog entri: " .. #catalog.entries)
                 log(string.format("Katalog dibaca: %d modul, %d gagal dari %d dicoba, %d kunci.",
-                    n, errN, tried, keyCount))
+                    n, errN, tried, catalog.keyCount))
             end
             return n
         end
@@ -3815,8 +3820,28 @@ local function boot()
                                     end
                                 end
 
-                                -- AreaEggUpdated mengirim AssetCategory + BoundsCFrame tanpa Uid.
-                                -- Cocokkan lewat posisi egg terdekat di area yang sama.
+                                -- AreaEggUpdated kadang mengirim Uid="AreaEgg_<guid>" langsung.
+                                -- Ini paling akurat: tidak perlu menebak lewat posisi.
+                                local areaUid = t.Uid or t.UID or t.EggUid
+                                if type(areaUid) == "string" and string.find(areaUid, "AreaEgg", 1, true) then
+                                    local g = guidOf(areaUid)
+                                    if g then
+                                        local ukey = string.lower(g)
+                                        snapCache[ukey] = t
+                                        snapMeta[ukey] = t
+                                        if type(cat) == "string" and cat ~= "" then
+                                            uidCategory[ukey] = string.lower(cat)
+                                        end
+                                        if type(t.AreaId) == "string" then uidArea[ukey] = t.AreaId end
+                                        if rar > 0 and type(cat) == "string" then
+                                            categoryRarity[string.lower(cat)] = rar
+                                        end
+                                        changed = true
+                                    end
+                                end
+
+                                -- AreaEggUpdated juga bisa mengirim AssetCategory + BoundsCFrame
+                                -- tanpa Uid. Cocokkan lewat posisi egg terdekat di area yang sama.
                                 if type(cat) == "string" and cat ~= ""
                                     and string.find(name, "AreaEgg", 1, true) then
                                     local pos = vecOf(t.BoundsCFrame or t.CFrame or t.Position)

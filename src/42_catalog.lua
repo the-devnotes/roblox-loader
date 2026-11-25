@@ -72,7 +72,11 @@
 
         local function storeCatalogEntry(name, data, verbose)
             local info, keys = catalogInfoFromData({ Name = name }, data)
-            for _, k in pairs(keys) do catalog.byKey[k] = info end
+            for _, k in pairs(keys) do
+                if not catalog.byKey[k] then catalog.keyCount = catalog.keyCount + 1 end
+                catalog.byKey[k] = info
+            end
+            catalog.entries[#catalog.entries + 1] = info
             return info, keys
         end
 
@@ -184,6 +188,7 @@
             local n, errN, tried = 0, 0, 0
             catalog.byKey = {}
             catalog.entries = {}
+            catalog.keyCount = 0
             local okRarity, errRarity = pcall(readRarityModule, verbose)
             if not okRarity and verbose then log("RARITY error: " .. tostring(errRarity)) end
 
@@ -207,6 +212,7 @@
                         if okEntry then
                             local added = 0
                             for _, k in pairs(keys) do
+                                if not catalog.byKey[k] then catalog.keyCount = catalog.keyCount + 1 end
                                 catalog.byKey[k] = info
                                 added = added + 1
                             end
@@ -233,10 +239,9 @@
             gallerySig = ""
 
             if verbose then
-                local keyCount = 0
-                for _ in pairs(catalog.byKey) do keyCount = keyCount + 1 end
+                log("Katalog entri: " .. #catalog.entries)
                 log(string.format("Katalog dibaca: %d modul, %d gagal dari %d dicoba, %d kunci.",
-                    n, errN, tried, keyCount))
+                    n, errN, tried, catalog.keyCount))
             end
             return n
         end
