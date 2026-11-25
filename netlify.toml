@@ -1,0 +1,6 @@
+[build]
+  publish = "netlify"
+  command = "sh prepare-netlify.sh"
+
+[build.environment]
+  NODE_VERSION = "20"

@@ -8,6 +8,21 @@
 - Netlify bisa dipakai asal file `.lua` ikut ter-deploy dan site/public accessible. CORS bukan masalah untuk `HttpGet`/`GetAsync`.
 - `luac -p loader.lua` OK.
 
+## Deploy Netlify pakai CLI (pending eksekusi user)
+- File disiapkan: `netlify.toml` (`publish = "netlify"`, build command `sh prepare-netlify.sh`), `prepare-netlify.sh`, `deploy-netlify.sh`, `netlify/index.html`, `netlify/_headers`, `netlify/logo.jpg`, `netlify/BikeForEggsMobile_v5_2.lua`.
+- `sh prepare-netlify.sh` sudah dijalankan & OK; folder `netlify/` berisi script, logo, halaman status, dan header (`text/plain` + no-cache).
+- Urutan user di environment dengan Node normal:
+  ```sh
+  npm install -g netlify-cli
+  netlify login
+  netlify init          # sekali; atau netlify link --id <site-id>
+  sh deploy-netlify.sh
+  ```
+- `deploy-netlify.sh` menjalankan build + salin file, lalu `netlify deploy --prod --dir=netlify` (memakai `NETLIFY_SITE_ID` kalau diset).
+- Setelah deploy: isi `NETLIFY_URL` di `loader.lua` dengan `https://<site>.netlify.app/BikeForEggsMobile_v5_2.lua`.
+- Catatan: Node di Termux sesi ini rusak (`cannot locate symbol _ZNSt6__ndk113__hash_memoryEPKvm`), jadi deploy CLI tidak bisa dijalankan di sini. Perlu dijalankan user di PC/WSL/Termux dengan Node yang berfungsi.
+- Belum ter-commit pada checkout `7c4c171`.
+
 ## v6.1 — penamaan UI
 Permintaan user: jangan terdengar "AI banget"/jargon ganda; pakai deskripsi yang sesuai fitur.
 

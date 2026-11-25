@@ -15,8 +15,30 @@ Folder ini siap dipush ke GitHub. Script asli di `../Lainnya/BikeForEggsMobile_v
 2. Paste `loader.lua` ke `LocalScript`.
 3. Pilih sumber:
    - **GitHub raw**: default sudah terisi `danu-dev/roblox` branch `main`. Repo harus PUBLIC.
-   - **Netlify**: upload `dist/BikeForEggsMobile_v5_2.lua` ke folder deploy, lalu isi `NETLIFY_URL` di `loader.lua`, misalnya `https://nama-site.netlify.app/dist/BikeForEggsMobile_v5_2.lua`.
-4. Logo: upload `logo.jpg` ke Roblox lalu isi `LOGO_ID`. Kalau kosong, loader menggambar ikon telur biru.
+   - **Netlify**: pakai CLI seperti di bawah, lalu isi `NETLIFY_URL` di `loader.lua`.
+
+#### Deploy Netlify pakai CLI
+```sh
+npm install -g netlify-cli
+netlify login
+netlify init          # sekali saja, pilih "Create & configure a new site"
+sh deploy-netlify.sh
+```
+
+Kalau site sudah ada dan ingin di-link:
+```sh
+netlify link --id <site-id>
+NETLIFY_SITE_ID=<site-id> sh deploy-netlify.sh
+```
+
+`deploy-netlify.sh` otomatis menjalankan `build.sh`, menyalin script + logo ke folder `netlify/`, lalu `netlify deploy --prod --dir=netlify`.
+
+Setelah deploy, buka URL yang muncul. Isi di `loader.lua`:
+```lua
+local NETLIFY_URL = "https://nama-site.netlify.app/BikeForEggsMobile_v5_2.lua"
+```
+
+Logo: upload `logo.jpg` ke Roblox lalu isi `LOGO_ID`. Kalau kosong, loader menggambar ikon telur biru.
 
 Urutan ambil loader: Netlify (kalau diisi) → GitHub raw → gist cadangan. Kalau `loadstring` tidak tersedia di environment-mu, pakai Opsi A. Opsi A selalu paling aman karena tidak bergantung URL sama sekali.
 
