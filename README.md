@@ -50,7 +50,7 @@ BikeForEggs/
 
 ## Kenapa `src/` tidak langsung dipaste?
 
-Roblox `LocalScript` cuma bisa satu file. Jadi `src/` dibuat terpisah untuk clean code, lalu `build.sh` menggabungkannya lagi jadi satu file di `dist/`. Semua bagian masih berbagi scope yang sama seperti script v5.2, jadi perilakunya tidak berubah.
+Roblox `LocalScript` cuma bisa satu file. Jadi `src/` dibuat terpisah untuk clean code, lalu `build.sh` menggabungkannya lagi jadi satu file di `dist/`. Semua bagian masih berbagi scope yang sama seperti script utuh, jadi perilakunya tidak berubah.
 
 ## Regenerate setelah edit `src/`
 
@@ -65,4 +65,5 @@ sh build.sh
 
 - Auto pilih area terbaik: sudah terbukti jalan di log user (`Forest -> Crystal Canyon`).
 - Steal + konfirmasi `AreaEggCarryState`: sudah terbukti jalan (`Grizzlite @ Crystal Canyon`).
+- v5.3: setelah prompt steal, karakter **langsung teleport ke base** dulu, baru menunggu konfirmasi — penjaga tidak sempat mengambil egg walaupun targetnya di paling belakang.
 - Belum selesai: rarity/value/weight masih `0` untuk egg yang belum pernah di-claim. Lihat `TODO.md`.

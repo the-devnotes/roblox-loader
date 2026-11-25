@@ -1,5 +1,8 @@
 # TODO / handoff cepat
 
+## v5.3 — sudah diperbaiki
+Steal egg paling belakang membuat penjaga mengambil egg karena script menunggu konfirmasi `CarryState` sambil masih berdiri di dekat egg. Sekarang setelah prompt dikirim, karakter **langsung teleport ke base**, lalu konfirmasi ditunggu di base. Kalau Uid/Area salah, script kembali ke egg untuk retry.
+
 ## Dari log user terbaru (18:38–18:40)
 Yang sudah OK:
 - `Auto pilih area terbaik: Crystal Canyon` → auto area tidak lagi nempel di Forest.

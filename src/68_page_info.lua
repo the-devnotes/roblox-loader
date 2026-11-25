@@ -29,7 +29,7 @@
     local pgInfo = ui:page("info", "Info", "ℹ️")
     pgInfo:section("Tentang")
     pgInfo:card({
-        {"Versi", "v5.2"},
+        {"Versi", "v5.3"},
         {"UI", "BFEUI (embedded)"},
         {"Player", lp.Name},
         {"Executor", executorName},

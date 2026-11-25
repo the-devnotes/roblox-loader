@@ -2092,20 +2092,22 @@ local function boot()
         local i = e.info or eggInfoCached(e.m)
         local targetUid = e.uid
         local targetArea = AREAS[state.area][1]
+        -- Ambil posisi base SEBELUM mendekat, supaya kabur bisa langsung dilakukan.
+        local b, baseSrc = basePos()
 
         local fired, anyPrompt, confirmed = false, false, false
         for attempt = 1, 3 do
             local pos = eggPos(e.m) or e.pos
             -- Dekatkan ke egg asli; jangan fire prompt dari jarak jauh (server menolak).
             teleport(pos + Vector3.new(0, 1, 2))
-            task.wait(0.25)
+            task.wait(0.2)
 
-            local p, pd = waitForCarryPrompt(attempt == 1 and 1.6 or 0.7)
+            local p, pd = waitForCarryPrompt(attempt == 1 and 1.0 or 0.5)
             if not p then
                 local sp = nearestSmartPart()
                 if sp then
                     teleport(sp.Position)
-                    task.wait(0.2)
+                    task.wait(0.15)
                     p, pd = carryPrompt()
                 end
             end
@@ -2116,7 +2118,7 @@ local function boot()
                 local part = p.Parent
                 if part and part:IsA("BasePart") then
                     teleport(part.Position)
-                    task.wait(0.12)
+                    task.wait(0.1)
                 end
             end
 
@@ -2124,36 +2126,46 @@ local function boot()
             for _ = 1, 3 do
                 if not p.Enabled then break end
                 if firePrompt(p, 12) then fired = true end
-                task.wait(0.12)
+                task.wait(0.1)
             end
 
-            -- Konfirmasi dari server: AreaEggCarryState harus menyebut Uid egg yang ditarget.
-            task.wait(0.5)
-            if carryEventSeen then
-                if lastCarry and lastCarry.at >= fireAt - 0.1 then
-                    local uidOk = not targetUid or not lastCarry.uid
-                        or lastCarry.uid == targetUid
-                        or (uidCategory[lastCarry.uid] and uidCategory[targetUid]
-                            and uidCategory[lastCarry.uid] == uidCategory[targetUid])
-                    local areaOk = not lastCarry.area
-                        or string.lower(tostring(lastCarry.area)) == string.lower(targetArea)
-                    if uidOk and areaOk then
-                        confirmed = true
-                        break
-                    end
-                    if os.clock() - lastPromptLog > 4 then
-                        lastPromptLog = os.clock()
-                        log(string.format("Steal salah target: minta %s di %s, dapat %s di %s. Coba lagi.",
-                            tostring(targetUid or i.name):sub(1, 12), targetArea,
-                            tostring(lastCarry.uid or "?"):sub(1, 12), tostring(lastCarry.area or "?")))
-                    end
-                elseif os.clock() - lastPromptLog > 4 then
-                    lastPromptLog = os.clock()
-                    log("Prompt terkirim tapi server tidak mengirim konfirmasi CarryState. Coba lagi.")
+            -- PENTING: kabur dulu dari penjaga, baru tunggu konfirmasi server.
+            if b then teleport(b) end
+
+            local gotConfirm = false
+            local deadline = os.clock() + 0.8
+            while os.clock() < deadline do
+                task.wait(0.08)
+                if carryEventSeen and lastCarry and lastCarry.at >= fireAt - 0.1 then
+                    gotConfirm = true
+                    break
                 end
-            else
+            end
+
+            if gotConfirm then
+                local uidOk = not targetUid or not lastCarry.uid
+                    or lastCarry.uid == targetUid
+                    or (uidCategory[lastCarry.uid] and uidCategory[targetUid]
+                        and uidCategory[lastCarry.uid] == uidCategory[targetUid])
+                local areaOk = not lastCarry.area
+                    or string.lower(tostring(lastCarry.area)) == string.lower(targetArea)
+                if uidOk and areaOk then
+                    confirmed = true
+                    break
+                end
+                if os.clock() - lastPromptLog > 4 then
+                    lastPromptLog = os.clock()
+                    log(string.format("Steal salah target: minta %s di %s, dapat %s di %s. Coba lagi.",
+                        tostring(targetUid or i.name):sub(1, 12), targetArea,
+                        tostring(lastCarry.uid or "?"):sub(1, 12), tostring(lastCarry.area or "?")))
+                end
+            elseif not carryEventSeen then
+                -- Environment tanpa event CarryState: anggap prompt berhasil.
                 confirmed = fired
                 break
+            elseif os.clock() - lastPromptLog > 4 then
+                lastPromptLog = os.clock()
+                log("Prompt terkirim, sudah kabur ke base dulu sambil tunggu konfirmasi CarryState.")
             end
         end
 
@@ -2167,14 +2179,11 @@ local function boot()
         end
 
         galleryDirty = true
-        if not confirmed and carryEventSeen then return false end
-
-        local b, src = basePos()
         if b then
             teleport(b)
-            log("Kembali ke base (" .. tostring(src) .. ").")
+            log("Kembali ke base" .. (baseSrc and (" (" .. tostring(baseSrc) .. ")") or "") .. ".")
             task.wait(manual and 1.6 or 1.2)
-        else
+        elseif confirmed then
             log("Base belum diketahui. Buka halaman Area lalu tekan Set Base.")
         end
         return confirmed
@@ -2879,7 +2888,7 @@ local function boot()
     local pgInfo = ui:page("info", "Info", "ℹ️")
     pgInfo:section("Tentang")
     pgInfo:card({
-        {"Versi", "v5.2"},
+        {"Versi", "v5.3"},
         {"UI", "BFEUI (embedded)"},
         {"Player", lp.Name},
         {"Executor", executorName},
