@@ -11,19 +11,31 @@ Folder ini siap dipush ke GitHub. Script asli di `../Lainnya/BikeForEggsMobile_v
 4. Jalankan. Script ini **standalone**: BFEUI sudah ditanam, tidak butuh `HttpGet` / module luar.
 
 ### Opsi B — Loader ClipperHub (universal)
-1. `loader.lua` memakai UI biru + hitam, ikon digambar (tanpa emoji), dan tanda `By ClipperHub`.
-2. Paste `loader.lua` ke `LocalScript`.
-3. Untuk script lain, edit tabel `SOURCES` di bagian atas loader. Isi URL Netlify / GitHub raw / gist; sumber dicoba berurutan.
-4. Default `SOURCES` masih mengarah ke file Bike For Eggs di Netlify. Contoh sumber lain sudah disiapkan dalam bentuk komentar.
+1. `loader.lua`: UI biru + hitam, ikon digambar (tanpa emoji), tanda `By ClipperHub`, **tanpa subjudul**.
+2. Paste `loader.lua` ke `LocalScript`. Loader langsung jalan otomatis, tanpa klik.
+3. Untuk script lain, edit tabel `SOURCES` di atas. Isi URL Netlify / GitHub raw / gist; sumber dicoba berurutan.
+4. Set `ENCODED = true` kalau sumber berisi hex. Set `false` kalau sumber Lua polos.
+
+#### Auto loader tanpa UI
+`loader-auto.lua` adalah versi satu baris ala:
+
+```lua
+loadstring(game:HttpGet("URL"))()
+```
+
+Isinya otomatis mengambil file `.hex`, mendekode, lalu menjalankan. Tidak ada kartu UI.
 
 #### Site Netlify aktif
 - Project: `bikeforeggs-loader`
 - Team: `YE` (`danzsukargb`)
 - URL: https://bikeforeggs-loader.netlify.app
-- File script: https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua
+- File Lua polos: https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua
+- File hex (dipakai loader): https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.hex
 - Project ID: `3c1e05d6-93c9-453a-857a-2d4f4c68702e`
 
-`loader.lua` sudah memakai URL file di atas sebagai sumber utama.
+Kalau file `.hex` dibuka di browser, isinya tampak seperti deretan angka, bukan kode Lua. Roblox tetap bisa menjalankannya setelah didekode loader.
+
+Catatan jujur: ini **penyamaran**, bukan enkripsi. Siapa pun yang punya URL dan tahu caranya tetap bisa mendekode. Tidak mungkin menyembunyikan kode sepenuhnya selama Roblox harus mengunduh source-nya untuk `loadstring`.
 
 #### Deploy ulang pakai CLI
 ```sh
@@ -31,11 +43,11 @@ sh prepare-netlify.sh
 netlify deploy --prod --dir=netlify --no-build
 ```
 
-`deploy-netlify.sh` juga tersedia untuk alur lama (build + deploy). `netlify init` sudah pernah dijalankan: skill Netlify terpasang di `.agents/skills` dan MCP server ditambahkan ke `opencode.jsonc`.
+`prepare-netlify.sh` otomatis membuat ulang file `.hex` dari `dist/`. `netlify init` sudah pernah dijalankan: skill Netlify terpasang di `.agents/skills` dan MCP server ditambahkan ke `opencode.jsonc`.
 
 Logo: upload `logo.jpg` ke Roblox lalu isi `LOGO_ID`. Kalau kosong, loader menggambar ikon telur biru.
 
-Urutan ambil loader: Netlify (kalau diisi) → GitHub raw → gist cadangan. Kalau `loadstring` tidak tersedia di environment-mu, pakai Opsi A. Opsi A selalu paling aman karena tidak bergantung URL sama sekali.
+Kalau `loadstring` tidak tersedia di environment-mu, pakai Opsi A. Opsi A selalu paling aman karena tidak bergantung URL sama sekali.
 
 ## Strukturfolder
 
@@ -58,11 +70,14 @@ BikeForEggs/
 │   ├── 51_prompts.lua            scan proximity prompt
 │   ├── 52_steal.lua              doSteal + konfirmasi CarryState
 │   ├── 60_ui_boot.lua            init UI + sidebar
-│   ├── 61..68_page_*.lua         halaman Home/Steal/Auto/Filter/Egg/Area/Log/Info
+│   ├── 61..67_page_*.lua         halaman Utama/Ambil/Tetas & Jual/Filter/Area/Log
 │   ├── 70_dashboard.lua          update dashboard
-│   ├── 71_loops.lua              loop hatch/sell/snapshot/event
+│   ├── 71_loops.lua              loop ambil/tetas/jual/event
 │   └── 99_start.lua              start + error notice
-├── loader.lua            optional raw-GitHub loader
+├── loader.lua            loader UI ClipperHub (hex + auto loadstring)
+├── loader-auto.lua       auto loader satu baris, tanpa UI
+├── netlify/              folder publish (script + hex + logo + status)
+│   └── BikeForEggsMobile_v5_2.hex  source tersamar untuk loader
 ├── TODO.md               catatan lanjutan / bug yang belum selesai
 └── docs/
     └── BFE_V5_HANDOFF.md  catatan teknis hasil investigasi API

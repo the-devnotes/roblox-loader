@@ -4,18 +4,20 @@
 
     Loader serbaguna: ganti daftar SOURCES untuk script apa pun.
     Tamp biru + hitam, ikon digambar pakai Frame (tanpa emoji).
+    File script disimpan ber-encode hex supaya tidak terbaca sebagai Lua di browser.
+    Loader otomatis mendekode lalu menjalankan dengan loadstring.
 
     Kalau logo ClipperHub sudah di-upload ke Roblox, isi LOGO_ID dengan Asset ID-nya.
     Kalau dikosongkan, loader menggambar ikon telur biru sendiri.
 ]]
 local APP_TITLE = "CLIPPERHUB"
-local APP_SUBTITLE = "UNIVERSAL LOADER"
 local CREDIT = "By ClipperHub"
 local LOGO_ID = "" -- contoh: "123456789"
+local ENCODED = true -- true = file sumber berisi hex, false = Lua polos
 
 -- Sumber dicoba berurutan. Tambah/hapus baris sesuai script yang dimuat.
 local SOURCES = {
-    { label = "netlify.app", url = "https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua" },
+    { label = "netlify.app", url = "https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.hex" },
     -- { label = "raw.githubusercontent.com", url = "https://raw.githubusercontent.com/USER/REPO/main/dist/script.lua" },
     -- { label = "gist.githubusercontent.com", url = "https://gist.githubusercontent.com/USER/ID/raw/script.lua" },
 }
@@ -27,9 +29,16 @@ for _, s in ipairs(SOURCES) do
     end
 end
 
+local function decode(body)
+    if not ENCODED then return body end
+    local clean = (tostring(body):gsub("%s+", ""))
+    return (clean:gsub("%x%x", function(h) return string.char(tonumber(h, 16)) end))
+end
+
 local function scriptName(url)
     local name = tostring(url):match("([^/]+)$") or "script.lua"
-    return (name:gsub("%?.*$", ""))
+    name = (name:gsub("%?.*$", ""))
+    return (name:gsub("%.hex$", ".lua"))
 end
 
 local DISPLAY_NAME = sources[1] and scriptName(sources[1].url) or "script.lua"
@@ -188,17 +197,6 @@ inst("TextLabel", {
     Font = Enum.Font.GothamBold,
     TextSize = 19,
 }, logoBox)
-
-inst("TextLabel", {
-    Name = "SubBrand",
-    Size = UDim2.new(1, -24, 0, 16),
-    Position = UDim2.fromOffset(12, 142),
-    BackgroundTransparency = 1,
-    Text = APP_SUBTITLE,
-    TextColor3 = BLUE,
-    Font = Enum.Font.GothamSemibold,
-    TextSize = 10,
-}, logoBox).TextTransparency = 0.1
 
 -- Status: titik berwarna dipakai sebagai ikon, bukan emoji.
 local statusDot = inst("Frame", {
@@ -373,6 +371,13 @@ start = function()
         fail("Gagal memuat script", "Semua sumber tidak bisa diambil. Coba lagi, atau paste isi script langsung ke LocalScript.")
         return
     end
+
+    local okDecode, decoded = pcall(decode, src)
+    if not okDecode or type(decoded) ~= "string" or decoded == "" then
+        fail("Gagal mendekode script", "Isi sumber bukan hex yang valid. Cek ENCODED dan URL di loader.")
+        return
+    end
+    src = decoded
 
     setStatus("Script diterima", OK, #src .. " karakter")
     setProgress(0.9)

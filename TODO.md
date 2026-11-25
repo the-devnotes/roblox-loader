@@ -1,8 +1,11 @@
 # TODO / handoff cepat
 
 ## Loader v6 — UI biru/hitam + Netlify
-- `loader.lua` sekarang diposisikan sebagai **ClipperHub Loader (universal)**: judul `CLIPPERHUB`, subjudul `UNIVERSAL LOADER`, tanda `By ClipperHub`.
+- `loader.lua` sekarang diposisikan sebagai **ClipperHub Loader (universal)**: judul `CLIPPERHUB`, tanda `By ClipperHub`. Subjudul dihapus sesuai request.
 - Konfigurasi dipindah ke tabel `SOURCES` di atas. Tinggal ganti/tambah URL untuk script lain; sumber dicoba berurutan. `LOGO_ID` tetap opsional.
+- `ENCODED = true`: sumber default adalah `BikeForEggsMobile_v5_2.hex` (hex dari script). Loader otomatis dekode lalu `loadstring`. Kalau mau pakai Lua polos, set `ENCODED = false` dan ganti URL ke `.lua`.
+- `loader-auto.lua`: versi satu baris tanpa UI, pola `loadstring(game:HttpGet(url))()` dengan dekode hex di dalamnya.
+- File `.hex` sengaja dipakai supaya konten tidak terbaca sebagai Lua di browser. Ini penyamaran, bukan enkripsi; tetap bisa didekode kalau orang punya URL + tahu caranya.
 - ScreenGui `BFE_Loader_v6`: latar hitam, aksen biru, kartu melingkar, bar progres, status, tombol `Coba Lagi` dan `Salin Info`.
 - Ikon: titik status dan ikon telur digambar pakai `Frame` + `UICorner`. Tidak ada emoji di loader.
 - `LOGO_ID`: kalau diisi dengan Asset ID `logo.jpg` yang sudah di-upload, loader menampilkan gambar tersebut. Kalau kosong, ikon telur biru dipakai.
@@ -19,11 +22,12 @@
   - Nama: `bikeforeggs-loader`
   - Project ID: `3c1e05d6-93c9-453a-857a-2d4f4c68702e`
   - URL: https://bikeforeggs-loader.netlify.app
-- Deploy sukses: `netlify deploy --prod --dir=netlify --no-build` → 4 file live.
-  - Deploy ID: `6b07346ef1baed9de5de219c`
-  - File: https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua
+- Deploy sukses: `netlify deploy --prod --dir=netlify --no-build` → 5 file live.
+  - Deploy ID terakhir: `6b073663a1a8529a14d470a4`
+  - File Lua: https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.lua
+  - File hex (dipakai loader): https://bikeforeggs-loader.netlify.app/BikeForEggsMobile_v5_2.hex
   - Logo: https://bikeforeggs-loader.netlify.app/logo.jpg
-- URL file di atas sudah terpasang sebagai entri pertama `SOURCES` di `loader.lua`. `luac -p loader.lua` wajib dicek ulang sebelum commit.
+- URL `.hex` sudah terpasang sebagai entri pertama `SOURCES` di `loader.lua`. `luac -p loader.lua` dan `luac -p loader-auto.lua` wajib dicek ulang sebelum commit.
 - Deploy ulang: `sh prepare-netlify.sh && netlify deploy --prod --dir=netlify --no-build`.
 - Catatan: `netlify deploy --prod` tanpa `--dir` sempat timeout; pakai `--dir=netlify --no-build` yang terbukti sukses.
 
