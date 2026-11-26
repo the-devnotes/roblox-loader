@@ -5,7 +5,7 @@ local HttpService = game:GetService("HttpService")
 local RS = game:GetService("ReplicatedStorage")
 
 -- Identitas hub / game
-local LOGO_ASSET_ID = 108197288037218 -- AssetId gambar logo
+local LOGO_ASSET_ID = 102269948329032 -- AssetId gambar logo
 local HUB_NAME = "Clipper Hub"        -- nama hub
 local NAME_GAME = "Mendeteksi..."     -- diisi otomatis oleh auto()
 
