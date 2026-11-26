@@ -116,12 +116,14 @@ local function ui(player, judul, tombol)
 	Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 14)
 
 	local logo = Instance.new("ImageLabel", frame)
+	logo.Name = "Logo"
 	logo.Size = UDim2.fromOffset(48, 48)
 	logo.Position = UDim2.fromOffset(12, 12)
 	logo.Image = "rbxassetid://" .. LOGO_ASSET_ID
 	logo.BackgroundTransparency = 1
 
 	local header = Instance.new("TextLabel", frame)
+	header.Name = "Header"
 	header.Size = UDim2.new(1, -72, 0, 24)
 	header.Position = UDim2.fromOffset(68, 12)
 	header.BackgroundTransparency = 1
@@ -132,6 +134,7 @@ local function ui(player, judul, tombol)
 	header.TextXAlignment = Enum.TextXAlignment.Left
 
 	local sub = Instance.new("TextLabel", frame)
+	sub.Name = "Subtitle"
 	sub.Size = UDim2.new(1, -72, 0, 18)
 	sub.Position = UDim2.fromOffset(68, 36)
 	sub.BackgroundTransparency = 1
@@ -142,6 +145,7 @@ local function ui(player, judul, tombol)
 	sub.TextXAlignment = Enum.TextXAlignment.Left
 
 	local isi = Instance.new("Frame", frame)
+	isi.Name = "Content"
 	isi.Size = UDim2.new(1, -24, 1, -80)
 	isi.Position = UDim2.fromOffset(12, 68)
 	isi.BackgroundTransparency = 1
