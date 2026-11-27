@@ -5,14 +5,20 @@ local HttpService = game:GetService("HttpService")
 local RS = game:GetService("ReplicatedStorage")
 
 -- Identitas hub / game
+local VERSION = "9.5"                 -- versi loader
 local LOGO_ASSET_ID = 102269948329032 -- AssetId gambar logo
 local HUB_NAME = "Clipper Hub"        -- nama hub
 local NAME_GAME = "Mendeteksi..."     -- diisi otomatis oleh auto()
 
+-- Data game (https://www.roblox.com/games/74023858073178/Bike-For-Egg):
+-- game.GameId (UniverseId) = 10766620257
+-- game.PlaceId             = 74023858073178
+local REPO = "https://raw.githubusercontent.com/the-devnotes/BikeForEggs/main"
+local SCRIPT_BFE = REPO .. "/dist/BikeForEggs_AllInOne.lua"
+
 -- Nama tampilan per game (opsional). Kalau tidak ada, pakai nama script-nya.
 local DAFTAR_NAMA = {
-	GameA = "Obby Legend",
-	GameB = "Tycoon Sim",
+	BikeForEgg = "Bike For Egg!",
 	Universal = "Game Lain",
 }
 
@@ -21,13 +27,11 @@ local cache = {}   -- nama -> kode (biar tidak fetch dua kali)
 
 -- Pemetaan: GameId utama, PlaceId cadangan
 local byGame = {
-	[1234567890] = "GameA",
-	[9876543210] = "GameB",
+	[10766620257] = "BikeForEgg",
 }
 
 local byPlace = {
-	[1111111111] = "GameA",
-	[2222222222] = "GameB",
+	[74023858073178] = "BikeForEgg",
 }
 
 local function register(nama, sumber)
@@ -82,7 +86,7 @@ local function auto(ikutUniversal)
 
 	-- NAME_GAME menyesuaikan game yang cocok di daftar (atau Universal).
 	NAME_GAME = DAFTAR_NAMA[nama] or nama or DAFTAR_NAMA.Universal
-	print(("[%s] %s | Logo AssetId: %d"):format(HUB_NAME, NAME_GAME, LOGO_ASSET_ID))
+	print(("[%s v%s] %s | Logo AssetId: %d"):format(HUB_NAME, VERSION, NAME_GAME, LOGO_ASSET_ID))
 
 	if nama then
 		print(("[%s] Game dikenal -> %s"):format(HUB_NAME, NAME_GAME))
@@ -176,19 +180,13 @@ shared.ClipperHub = {
 	auto = auto,
 }
 
--- ================= CONTOH =================
--- ModuleScript "GameA_Source" di ReplicatedStorage isinya:
--- return [[
---     local gui = shared.ClipperHub.ui(player, "Menu GameA", {
---         { "TOMBOL 1", function() print("klik") end },
---         { "TOMBOL 2", function() print("klik juga") end },
---     })
--- ]]
--- ModuleScript "Universal_Source" isinya:
--- return [[ print("Universal jalan") ]]
+-- ================= DAFTAR SUMBER =================
+-- Bisa URL https://... (HttpService:GetAsync) atau nama ModuleScript di ReplicatedStorage.
+-- ModuleScript "Universal_Source" isinya: return [[ print("Universal jalan") ]]
+register("BikeForEgg", SCRIPT_BFE)
+register("Universal", SCRIPT_BFE)
 
-register("GameA", "GameA_Source")
-register("GameB", "https://example.com/gameb.lua")
-register("Universal", "Universal_Source")
-
-auto(true) -- true = universal ikut jalan walaupun game dikenal
+-- Game dikenal -> jalankan script game itu saja.
+-- Game tidak dikenal -> auto() otomatis pakai "Universal".
+-- Pakai auto(true) kalau mau Universal ikut jalan juga (hati-hati: script sama bisa dobel).
+auto()

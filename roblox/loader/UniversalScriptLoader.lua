@@ -25,14 +25,16 @@ end
 -- PEMETAAN GAME
 -- GameId = utama, PlaceId = cadangan
 -- ============================================================
+local REPO = "https://raw.githubusercontent.com/the-devnotes/BikeForEggs/main"
+local SCRIPT_BFE = REPO .. "/dist/BikeForEggs_AllInOne.lua"
+
+-- Bike For Egg! -> https://www.roblox.com/games/74023858073178/Bike-For-Egg
 local BY_GAME_ID = {
-	[1234567890] = "GameA", -- contoh
-	[9876543210] = "GameB", -- contoh
+	[10766620257] = "BikeForEgg", -- UniverseId
 }
 
 local BY_PLACE_ID = {
-	[1111111111] = "GameA", -- contoh
-	[2222222222] = "GameB", -- contoh
+	[74023858073178] = "BikeForEgg", -- PlaceId
 }
 
 -- ============================================================
@@ -232,20 +234,17 @@ function Loader.clearCache(nama)
 end
 
 -- ============================================================
--- CONTOH PEMAKAIAN
+-- DAFTAR SUMBER
 -- ============================================================
--- 1) Siapkan ModuleScript "GameA_Source" di ReplicatedStorage, isinya:
---    return [[ print("Script GameA berjalan") ]]
--- 2) Siapkan ModuleScript "Universal_Source" di ReplicatedStorage, isinya:
---    return [[ print("Script Universal berjalan") ]]
--- 3) GameB diambil dari URL (contoh, ganti dengan URL aslimu).
+-- "local:Nama" = ModuleScript di ReplicatedStorage.
+-- URL https://... diambil lewat HttpService:GetAsync.
+Loader.register("BikeForEgg", SCRIPT_BFE)             -- URL repo BikeForEggs
+Loader.register("Universal", "local:Universal_Source") -- cadangan
 
-Loader.register("GameA", "local:GameA_Source")             -- file lokal
-Loader.register("GameB", "https://example.com/gameb.lua")  -- URL
-Loader.register("Universal", "local:Universal_Source")     -- cadangan
-
--- Jalankan otomatis. Universal ikut jalan walaupun game dikenal:
-local sukses, hasil = Loader.auto({ includeUniversal = true })
+-- Jalankan otomatis. Game dikenal -> script itu saja.
+-- Game tidak dikenal -> Universal dipakai.
+-- Pakai includeUniversal = true kalau mau keduanya jalan.
+local sukses, hasil = Loader.auto({ includeUniversal = false })
 print("[Loader] Selesai. Sukses:", sukses, "Detail:", hasil)
 
 return Loader
