@@ -464,4 +464,3 @@ end
 
 -- Jalankan dengan CONFIG bawaan. Untuk script lain: edit CONFIG, atau panggil
 -- run({ title = ..., sources = { ... } }) dari file Anda sendiri.
-run(CONFIG)

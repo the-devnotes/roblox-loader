@@ -38,12 +38,7 @@ root, script_path, out_path, name, title, credit, logo_id = sys.argv[1:8]
 root = pathlib.Path(root)
 q = lambda s: json.dumps(str(s), ensure_ascii=False)
 
-loader = (root / "loader.lua").read_text()
-marker = "\nrun(CONFIG)"
-idx = loader.rfind(marker)
-if idx < 0:
-    raise SystemExit("build-allinone.sh: pemanggilan run(CONFIG) tidak ditemukan")
-loader_core = loader[:idx].rstrip() + "\n"
+loader_core = (root / "roblox/loader/ClipperHubCore.lua").read_text()
 
 payload = pathlib.Path(script_path).read_bytes().hex()
 safe_name = name.replace("\n", " ").replace("--", "-")
