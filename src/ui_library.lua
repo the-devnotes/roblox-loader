@@ -1,15 +1,20 @@
     --[[ ===================== 3. BFEUI MINI LIBRARY ===================== ]]
+    --[[
+        Palet dan ikon disamakan dengan loader.lua (ClipperHub).
+        Kalau mengubah warna di sini, ubah juga THEME di loader.lua.
+    ]]
     local C = {
-        bg      = Color3.fromRGB(17, 19, 28),
-        panel   = Color3.fromRGB(25, 28, 40),
-        panel2  = Color3.fromRGB(33, 37, 53),
-        panel3  = Color3.fromRGB(42, 47, 67),
-        stroke  = Color3.fromRGB(58, 64, 90),
-        text    = Color3.fromRGB(236, 239, 248),
-        sub     = Color3.fromRGB(150, 157, 182),
-        accent  = Color3.fromRGB(118, 170, 255),
-        green   = Color3.fromRGB(54, 199, 118),
-        red     = Color3.fromRGB(239, 90, 102),
+        bg      = Color3.fromRGB(7, 9, 14),      -- BLACK
+        panel   = Color3.fromRGB(14, 18, 28),    -- CARD
+        panel2  = Color3.fromRGB(18, 24, 38),
+        panel3  = Color3.fromRGB(24, 33, 52),
+        stroke  = Color3.fromRGB(33, 52, 82),    -- LINE
+        text    = Color3.fromRGB(232, 240, 255), -- TEXT
+        sub     = Color3.fromRGB(140, 160, 192), -- MUTED
+        accent  = Color3.fromRGB(48, 145, 255),  -- BLUE
+        accent2 = Color3.fromRGB(18, 72, 150),   -- BLUE_DARK
+        green   = Color3.fromRGB(72, 220, 152),
+        red     = Color3.fromRGB(255, 96, 112),
         yellow  = Color3.fromRGB(247, 190, 74),
     }
 
@@ -36,6 +41,105 @@
         s.Transparency = transparency or 0
         s.Parent = o
         return s
+    end
+
+    -- Ikon digambar dari Frame + UICorner. Tanpa emoji dan tanpa Asset ID.
+    -- Dipakai ulang oleh title bar, tombol mengambang, dan sidebar.
+    local function drawIcon(parent, name, size, color, knock)
+        local s = size or 20
+        local accent = color or C.accent
+        local cut = knock or C.panel
+        local u = s / 24
+
+        local holder = inst("Frame", {
+            Name = "Icon_" .. tostring(name or "dot"),
+            Size = UDim2.fromOffset(s, s),
+            BackgroundTransparency = 1,
+            BorderSizePixel = 0,
+        }, parent)
+
+        local painted = {}
+        local function part(x, y, w, h, col, radius, rotation, isPaint)
+            local f = inst("Frame", {
+                Size = UDim2.fromOffset(w * u, h * u),
+                Position = UDim2.fromOffset(x * u, y * u),
+                BackgroundColor3 = col,
+                BorderSizePixel = 0,
+                Rotation = rotation or 0,
+            }, holder)
+            corner(f, (radius or 0) * u)
+            if isPaint then painted[#painted + 1] = f end
+            return f
+        end
+        local function ring(x, y, d, thickness, col)
+            part(x, y, d, d, col, d / 2, nil, true)
+            local inner = d - thickness * 2
+            part(x + thickness, y + thickness, inner, inner, cut, inner / 2, nil, false)
+        end
+
+        local label
+        if name == "clipperhub" or name == "brand" then
+            part(1, 1, 22, 22, accent, 6, nil, true)          -- tile
+            part(17, 1, 3, 7, cut, 1.5, 38, false)            -- klip
+            label = inst("TextLabel", {
+                Size = UDim2.fromOffset(s, s),
+                BackgroundTransparency = 1,
+                Text = "C",
+                TextColor3 = cut,
+                Font = Enum.Font.GothamBold,
+                TextSize = 15 * u,
+            }, holder)
+        elseif name == "egg" then
+            part(7, 3, 10, 18, accent, 5, nil, true)
+            part(9, 6, 2, 6, cut, 1, -20, false)
+        elseif name == "home" then
+            part(5, 4, 14, 14, accent, 2, 45, true)
+            part(7, 13, 10, 8, accent, 2, nil, true)
+            part(10, 15, 4, 7, cut, 2, nil, false)
+        elseif name == "gear" then
+            ring(4, 4, 16, 4, accent)
+            part(10, 10, 4, 4, accent, 2, nil, true)
+            part(11, 1, 2, 4, accent, 1, nil, true)
+            part(11, 19, 2, 4, accent, 1, nil, true)
+            part(1, 11, 4, 2, accent, 1, nil, true)
+            part(19, 11, 4, 2, accent, 1, nil, true)
+        elseif name == "target" then
+            ring(2, 2, 20, 3, accent)
+            ring(7, 7, 10, 3, accent)
+            part(10, 10, 4, 4, accent, 2, nil, true)
+        elseif name == "map" then
+            part(3, 5, 6, 14, accent, 2, -8, true)
+            part(9, 4, 6, 15, accent, 2, 6, true)
+            part(15, 5, 6, 14, accent, 2, -5, true)
+        elseif name == "log" then
+            part(4, 4, 4, 4, accent, 2, nil, true)
+            part(10, 5, 10, 2, accent, 1, nil, true)
+            part(4, 11, 4, 4, accent, 2, nil, true)
+            part(10, 12, 10, 2, accent, 1, nil, true)
+            part(4, 18, 4, 4, accent, 2, nil, true)
+            part(10, 19, 10, 2, accent, 1, nil, true)
+        elseif name == "gallery" then
+            part(4, 4, 16, 16, accent, 5, nil, true)
+            part(7, 7, 8, 8, cut, 4, nil, false)
+        elseif name == "info" then
+            part(5, 9, 14, 4, accent, 2, nil, true)
+            part(8, 5, 8, 8, accent, 3, nil, true)
+            part(8, 16, 8, 4, accent, 2, nil, true)
+        else
+            part(8, 8, 8, 8, accent, 4, nil, true)
+        end
+
+        local function setIconColor(col)
+            for _, f in ipairs(painted) do
+                pcall(function() f.BackgroundColor3 = col end)
+            end
+            if label then pcall(function() label.TextColor3 = col end) end
+        end
+
+        return {
+            object = holder,
+            setColor = setIconColor,
+        }
     end
 
     local BFEUI = {}
@@ -80,38 +184,65 @@
             ClipsDescendants = true,
             Active = true,
         }, gui)
-        corner(win, 14)
-        stroke(win, C.stroke, 1, 0.12)
+        corner(win, 16)
+        stroke(win, C.accent, 1.2, 0.55)
         local winGrad = Instance.new("UIGradient")
-        winGrad.Color = ColorSequence.new(C.bg, Color3.fromRGB(21, 23, 37))
+        winGrad.Color = ColorSequence.new(C.bg, Color3.fromRGB(12, 17, 28))
         winGrad.Rotation = 90
         winGrad.Parent = win
         self.window = win
 
+        -- Cahaya biru lembut di bagian atas window.
+        local topGlow = inst("Frame", {
+            Size = UDim2.new(1, 0, 0, 96),
+            BackgroundColor3 = C.accent2,
+            BackgroundTransparency = 0.82,
+            BorderSizePixel = 0,
+        }, win)
+        local glowGrad = Instance.new("UIGradient")
+        glowGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, C.accent2),
+            ColorSequenceKeypoint.new(1, C.bg),
+        })
+        glowGrad.Rotation = 90
+        glowGrad.Parent = topGlow
+
         local bar = inst("Frame", {
             Name = "TitleBar",
-            Size = UDim2.new(1, 0, 0, 42),
+            Size = UDim2.new(1, 0, 0, 44),
             BackgroundColor3 = C.panel,
             BorderSizePixel = 0,
         }, win)
         local barGrad = Instance.new("UIGradient")
-        barGrad.Color = ColorSequence.new(Color3.fromRGB(34, 38, 58), Color3.fromRGB(25, 28, 40))
+        barGrad.Color = ColorSequence.new(C.panel2, C.panel)
         barGrad.Rotation = 90
         barGrad.Parent = bar
-
-        inst("TextLabel", {
-            Size = UDim2.fromOffset(34, 42),
-            Position = UDim2.fromOffset(10, 0),
-            BackgroundTransparency = 1,
-            Text = cfg.icon or "🥚",
-            TextColor3 = C.text,
-            Font = Enum.Font.GothamBold,
-            TextSize = 19,
+        inst("Frame", {
+            Size = UDim2.new(1, 0, 0, 2),
+            Position = UDim2.new(0, 0, 1, -2),
+            BackgroundColor3 = C.accent,
+            BackgroundTransparency = 0.25,
+            BorderSizePixel = 0,
         }, bar)
+
+        local logoId = tostring(cfg.logoAssetId or "")
+        if logoId ~= "" then
+            inst("ImageLabel", {
+                Name = "BrandLogo",
+                Size = UDim2.fromOffset(24, 24),
+                Position = UDim2.fromOffset(10, 10),
+                Image = "rbxassetid://" .. logoId,
+                ScaleType = Enum.ScaleType.Fit,
+                BackgroundTransparency = 1,
+            }, bar)
+        else
+            local brandIcon = drawIcon(bar, cfg.icon or "clipperhub", 24)
+            brandIcon.object.Position = UDim2.fromOffset(10, 10)
+        end
 
         inst("TextLabel", {
             Size = UDim2.new(1, -220, 0, 22),
-            Position = UDim2.fromOffset(48, 4),
+            Position = UDim2.fromOffset(44, 4),
             BackgroundTransparency = 1,
             Text = cfg.title or "Bike For Eggs",
             TextColor3 = C.text,
@@ -123,7 +254,7 @@
 
         inst("TextLabel", {
             Size = UDim2.new(1, -220, 0, 14),
-            Position = UDim2.fromOffset(48, 24),
+            Position = UDim2.fromOffset(44, 25),
             BackgroundTransparency = 1,
             Text = cfg.subtitle or "Mobile UI",
             TextColor3 = C.sub,
@@ -146,6 +277,7 @@
                 BorderSizePixel = 0,
             }, bar)
             corner(b, 8)
+            stroke(b, C.stroke, 1, 0.3)
             b.MouseButton1Click:Connect(function() pcall(cb) end)
             return b
         end
@@ -178,8 +310,8 @@
         end)
 
         local body = inst("Frame", {
-            Size = UDim2.new(1, 0, 1, -42),
-            Position = UDim2.fromOffset(0, 42),
+            Size = UDim2.new(1, 0, 1, -44),
+            Position = UDim2.fromOffset(0, 44),
             BackgroundTransparency = 1,
         }, win)
 
@@ -192,7 +324,8 @@
         inst("Frame", {
             Size = UDim2.new(0, 1, 1, 0),
             Position = UDim2.new(1, -1, 0, 0),
-            BackgroundColor3 = C.stroke,
+            BackgroundColor3 = C.accent,
+            BackgroundTransparency = 0.72,
             BorderSizePixel = 0,
         }, sidebar)
 
@@ -202,7 +335,7 @@
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             ScrollBarThickness = 2,
-            ScrollBarImageColor3 = C.stroke,
+            ScrollBarImageColor3 = C.accent2,
             CanvasSize = UDim2.new(),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollingDirection = Enum.ScrollingDirection.Y,
@@ -219,30 +352,49 @@
         }, body)
         self.nav, self.content = nav, content
 
-        local float = inst("TextButton", {
-            Name = "Float",
-            Size = UDim2.fromOffset(52, 52),
-            Position = UDim2.new(0, 12, 0.5, -26),
-            BackgroundColor3 = C.panel,
-            Text = "🥚",
-            TextSize = 23,
-            TextColor3 = C.text,
-            AutoButtonColor = false,
-            Visible = false,
-            BorderSizePixel = 0,
-        }, gui)
-        corner(float, 26)
-        stroke(float, C.stroke, 1.5, 0)
-        local dot = inst("Frame", {
-            Size = UDim2.fromOffset(12, 12),
-            Position = UDim2.new(1, -15, 0, 2),
-            BackgroundColor3 = C.green,
-            BorderSizePixel = 0,
-            Visible = false,
-        }, float)
-        corner(dot, 6)
-        stroke(dot, C.bg, 2, 0)
-        self.float, self.dot = float, dot
+        local float
+        if logoId ~= "" then
+            -- Mode logo: cuma gambar penuh, tanpa kotak / stroke / titik.
+            float = inst("ImageButton", {
+                Name = "Float",
+                Size = UDim2.fromOffset(52, 52),
+                Position = UDim2.new(0, 12, 0.5, -26),
+                Image = "rbxassetid://" .. logoId,
+                ScaleType = Enum.ScaleType.Fit,
+                BackgroundTransparency = 1,
+                AutoButtonColor = false,
+                Visible = false,
+            }, gui)
+            corner(float, 10) -- border radius 10 (rentang 5-15)
+            self.dot = nil
+        else
+            float = inst("TextButton", {
+                Name = "Float",
+                Size = UDim2.fromOffset(52, 52),
+                Position = UDim2.new(0, 12, 0.5, -26),
+                BackgroundColor3 = C.panel2,
+                Text = "",
+                AutoButtonColor = false,
+                Visible = false,
+                BorderSizePixel = 0,
+            }, gui)
+            corner(float, 16)
+            stroke(float, C.accent, 1.5, 0.35)
+            local floatIcon = drawIcon(float, "clipperhub", 28)
+            floatIcon.object.Position = UDim2.fromScale(0.5, 0.5)
+            floatIcon.object.AnchorPoint = Vector2.new(0.5, 0.5)
+            local dot = inst("Frame", {
+                Size = UDim2.fromOffset(12, 12),
+                Position = UDim2.new(1, -15, 0, 2),
+                BackgroundColor3 = C.green,
+                BorderSizePixel = 0,
+                Visible = false,
+            }, float)
+            corner(dot, 6)
+            stroke(dot, C.bg, 2, 0)
+            self.dot = dot
+        end
+        self.float = float
 
         local fDrag, fStart, fPos, fMoved = false, nil, nil, false
         float.InputBegan:Connect(function(input)
@@ -280,7 +432,7 @@
         return self
     end
 
-    function BFEUI:page(id, label, icon)
+    function BFEUI:page(id, label, iconName)
         local navBtn = inst("TextButton", {
             Name = "Nav_" .. id,
             Size = UDim2.new(1, -8, 0, 40),
@@ -290,12 +442,21 @@
             AutoButtonColor = false,
             BorderSizePixel = 0,
         }, self.nav)
-        corner(navBtn, 9)
+        corner(navBtn, 10)
+        local navGrad = Instance.new("UIGradient")
+        navGrad.Color = ColorSequence.new(C.accent2, C.accent)
+        navGrad.Rotation = 90
+        navGrad.Enabled = false
+        navGrad.Parent = navBtn
+
+        local iconObj = drawIcon(navBtn, iconName or "dot", 16)
+        iconObj.object.Position = UDim2.fromOffset(11, 12)
+
         local navLabel = inst("TextLabel", {
-            Size = UDim2.new(1, -14, 1, 0),
-            Position = UDim2.fromOffset(11, 0),
+            Size = UDim2.new(1, -40, 1, 0),
+            Position = UDim2.fromOffset(34, 0),
             BackgroundTransparency = 1,
-            Text = (icon and (icon .. "  ") or "") .. label,
+            Text = tostring(label),
             TextColor3 = C.sub,
             Font = Enum.Font.GothamMedium,
             TextSize = 12,
@@ -303,8 +464,8 @@
             TextTruncate = Enum.TextTruncate.AtEnd,
         }, navBtn)
         local indicator = inst("Frame", {
-            Size = UDim2.new(0, 3, 0, 18),
-            Position = UDim2.new(0, 0, 0.5, -9),
+            Size = UDim2.new(0, 3, 0, 20),
+            Position = UDim2.new(0, 0, 0.5, -10),
             BackgroundColor3 = C.accent,
             BorderSizePixel = 0,
             Visible = false,
@@ -318,7 +479,7 @@
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             ScrollBarThickness = 4,
-            ScrollBarImageColor3 = C.stroke,
+            ScrollBarImageColor3 = C.accent2,
             CanvasSize = UDim2.new(),
             AutomaticCanvasSize = Enum.AutomaticSize.Y,
             ScrollingDirection = Enum.ScrollingDirection.Y,
@@ -336,8 +497,9 @@
         }, scroll)
 
         local page = setmetatable({
-            ui = self, id = id, title = label, icon = icon,
-            nav = navBtn, navLabel = navLabel, indicator = indicator,
+            ui = self, id = id, title = label, icon = iconName,
+            nav = navBtn, navLabel = navLabel, navGrad = navGrad,
+            iconObj = iconObj, setIconColor = iconObj.setColor, indicator = indicator,
             scroll = scroll, count = 0,
         }, { __index = Page })
         self.pages[id] = page
@@ -355,8 +517,10 @@
             local sel = (p == page)
             p.scroll.Visible = sel
             p.nav.BackgroundTransparency = sel and 0 or 1
-            p.nav.BackgroundColor3 = sel and C.panel3 or C.panel2
+            p.nav.BackgroundColor3 = sel and C.accent2 or C.panel2
+            pcall(function() p.navGrad.Enabled = sel end)
             p.navLabel.TextColor3 = sel and C.text or C.sub
+            if p.setIconColor then pcall(p.setIconColor, sel and C.text or C.sub) end
             p.indicator.Visible = sel
         end
         if self.onPageShow then pcall(self.onPageShow, id) end
@@ -375,25 +539,35 @@
     end
 
     function BFEUI:setActive(v)
-        self.dot.Visible = v and true or false
-        self.float.BackgroundColor3 = v and Color3.fromRGB(28, 70, 48) or C.panel
+        if self.dot then
+            self.dot.Visible = v and true or false
+            self.float.BackgroundColor3 = v and C.accent2 or C.panel2
+        end
+        -- Mode logo sengaja tidak diubah supaya gambarnya tetap polos.
     end
 
     function BFEUI:toast(text, kind)
-        local color = (kind == "error" and C.red) or (kind == "warn" and C.yellow) or C.green
+        local color = (kind == "error" and C.red) or (kind == "warn" and C.yellow) or C.accent
         local tw = math.min(360, self.width - 40)
         local f = inst("Frame", {
-            Size = UDim2.fromOffset(tw, 40),
+            Size = UDim2.fromOffset(tw, 42),
             Position = UDim2.new(0.5, -tw / 2, 1, -56),
-            BackgroundColor3 = C.panel,
+            BackgroundColor3 = C.panel2,
             BorderSizePixel = 0,
             ZIndex = 50,
         }, self.gui)
-        corner(f, 10)
-        stroke(f, color, 1.5, 0)
+        corner(f, 12)
+        stroke(f, color, 1.2, 0.25)
+        local edge = inst("Frame", {
+            Size = UDim2.fromOffset(3, 42),
+            BackgroundColor3 = color,
+            BorderSizePixel = 0,
+            ZIndex = 51,
+        }, f)
+        corner(edge, 2)
         inst("TextLabel", {
             Size = UDim2.new(1, -20, 1, 0),
-            Position = UDim2.fromOffset(10, 0),
+            Position = UDim2.fromOffset(12, 0),
             BackgroundTransparency = 1,
             Text = tostring(text),
             TextColor3 = C.text,
@@ -430,4 +604,3 @@
         if self.gui then pcall(function() self.gui:Destroy() end) end
         if self.cfg.onDestroy then pcall(self.cfg.onDestroy, reason or "destroy") end
     end
-

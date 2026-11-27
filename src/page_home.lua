@@ -1,5 +1,5 @@
     --[[ ===================== 14. HOME PAGE ===================== ]]
-    local pgHome = ui:page("home", "Utama", "🏠")
+    local pgHome = ui:page("home", "Utama", "home")
     pgHome:section("Status")
     local homeStatus = pgHome:card({
         {"Ambil", "-"},

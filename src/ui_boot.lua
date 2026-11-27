@@ -1,8 +1,9 @@
     --[[ ===================== 13. UI BOOT ===================== ]]
     ui = BFEUI.new({
         title = "Bike For Eggs",
-        subtitle = "Mobile - Sidebar Edition v5",
-        icon = "🥚",
+        subtitle = "ClipperHub Mobile v5",
+        icon = "clipperhub",
+        logoAssetId = "102269948329032", -- kosongkan untuk memakai ikon digambar
         onDestroy = function()
             running = false
             envSet("BFE_V5_Running", nil)

@@ -1,5 +1,5 @@
     --[[ ===================== 15. STEAL PAGE ===================== ]]
-    local pgSteal = ui:page("steal", "Ambil", "🥚")
+    local pgSteal = ui:page("steal", "Ambil", "egg")
     pgSteal:section("Ambil Egg")
     local stealToggle = pgSteal:toggle("Ambil Egg Otomatis", state.steal, function(v) setFlag("steal", v) end)
     bind("steal", stealToggle)

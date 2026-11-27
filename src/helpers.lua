@@ -46,6 +46,7 @@
 
     -- Parsing rarity HANYA dari field yang jelas (Rarity, Tier, claim feedback, dll).
     -- "Cosmic" di nama area tidak boleh masuk lewat jalur ini.
+    -- Taruh di helper (sebelum snapshot) supaya applyCategoryMeta bisa memanggilnya.
     local function rarityOf(value)
         if type(value) == "number" then
             if value >= 1 and value <= #RARITY then return math.floor(value) end
@@ -54,6 +55,10 @@
         if type(value) ~= "string" then return 0 end
         local s = value:lower():gsub("[%s_%-]+", "")
         if s == "" then return 0 end
+        -- Urutan RarityNumber dari modul game diprioritaskan (Exclusive=7,
+        -- BrainrotGod=6, dll.) sebelum alias statis.
+        local rn = catalog and catalog.rarityNumber
+        if rn and rn[s] then return rn[s] end
         local best = 0
         for word, idx in pairs(RARITY_ALIAS) do
             local w = word:gsub("[%s_%-]+", "")
@@ -100,7 +105,8 @@
         return "{" .. table.concat(parts, ", ") .. "}"
     end
 
-    -- Nama/kategori generik bukan identitas egg. Jangan dipakai sebagai kunci uidCategory.
+    -- Nama/kategori generik bukan identitas egg. Jangan dipakai sebagai kunci
+    -- uidCategory maupun argumen RequestEggRecord (dulu selalu jadi "cat:egg").
     local function genericEggName(s)
         if type(s) ~= "string" then return true end
         local v = s:lower():gsub("^%s+", ""):gsub("%s+$", "")

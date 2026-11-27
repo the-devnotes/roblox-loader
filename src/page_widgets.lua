@@ -43,8 +43,8 @@
             BackgroundColor3 = C.panel,
             BorderSizePixel = 0,
         }, nil)
-        corner(f, 9)
-        stroke(f, color or C.stroke, 1, 0.35)
+        corner(f, 12)
+        stroke(f, color or C.accent, 1, 0.55)
         inst("UIPadding", {
             PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10),
             PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8),
@@ -100,8 +100,14 @@
             AutoButtonColor = true,
             BorderSizePixel = 0,
         }, nil)
-        corner(b, 9)
-        stroke(b, C.stroke, 1, variant and 0.55 or 0.25)
+        corner(b, 12)
+        stroke(b, variant == "primary" and C.accent or C.stroke, 1, variant and 0.45 or 0.25)
+        if variant == "primary" then
+            local g = Instance.new("UIGradient")
+            g.Color = ColorSequence.new(C.accent2, C.accent)
+            g.Rotation = 90
+            g.Parent = b
+        end
         b.MouseButton1Click:Connect(function()
             if cb then
                 local ok, err = pcall(cb)
@@ -136,7 +142,13 @@
                 BorderSizePixel = 0,
                 LayoutOrder = i,
             }, f)
-            corner(b, 9)
+            corner(b, 12)
+            if item.variant == "primary" then
+                local g = Instance.new("UIGradient")
+                g.Color = ColorSequence.new(C.accent2, C.accent)
+                g.Rotation = 90
+                g.Parent = b
+            end
             b.MouseButton1Click:Connect(function()
                 if item.callback then
                     local ok, err = pcall(item.callback)
@@ -156,7 +168,7 @@
             AutoButtonColor = false,
             BorderSizePixel = 0,
         }, nil)
-        corner(row, 9)
+        corner(row, 12)
         inst("TextLabel", {
             Size = UDim2.new(1, -78, 1, 0),
             Position = UDim2.fromOffset(12, 0),
@@ -186,7 +198,7 @@
         local on = initial and true or false
         local widget = {}
         local function render(animated)
-            local targetBg = on and C.green or C.panel3
+            local targetBg = on and C.accent or C.panel3
             local targetPos = on and UDim2.new(1, -24, 0.5, -10) or UDim2.new(0, 4, 0.5, -10)
             if animated then
                 TweenService:Create(sw, TweenInfo.new(0.14), { BackgroundColor3 = targetBg }):Play()
@@ -222,7 +234,7 @@
             AutoButtonColor = false,
             BorderSizePixel = 0,
         }, nil)
-        corner(row, 9)
+        corner(row, 12)
         inst("TextLabel", {
             Size = UDim2.new(0.54, -10, 1, 0),
             Position = UDim2.fromOffset(12, 0),
@@ -282,7 +294,7 @@
             BackgroundColor3 = C.panel2,
             BorderSizePixel = 0,
         }, nil)
-        corner(row, 9)
+        corner(row, 12)
         inst("TextLabel", {
             Size = UDim2.new(1, -140, 1, 0),
             Position = UDim2.fromOffset(12, 0),
@@ -355,8 +367,8 @@
             BackgroundColor3 = C.panel,
             BorderSizePixel = 0,
         }, nil)
-        corner(f, 10)
-        stroke(f, C.stroke, 1, 0.4)
+        corner(f, 12)
+        stroke(f, C.accent, 1, 0.72)
         inst("UIPadding", {
             PaddingLeft = UDim.new(0, 10), PaddingRight = UDim.new(0, 10),
             PaddingTop = UDim.new(0, 8), PaddingBottom = UDim.new(0, 8),

@@ -1,5 +1,5 @@
     --[[ ===================== 19. LOG PAGE ===================== ]]
-    local pgLog = ui:page("log", "Log", "📜")
+    local pgLog = ui:page("log", "Log", "log")
     pgLog:section("Log Aktivitas")
     local logFrame = pgLog:frame(math.max(200, math.floor(ui.height - 150)))
     logFrame.BackgroundColor3 = Color3.fromRGB(11, 12, 18)

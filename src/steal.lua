@@ -3,6 +3,7 @@
     local stealIdx = 0
     local lastNoEggLog = 0
     local lastPromptLog = 0
+    local lastSnapTry = -1e9
     local lastAutoAreaTry = -1e9
 
     local function nearestSmartPart()
@@ -84,7 +85,7 @@
                 end
                 if os.clock() - lastPromptLog > 4 then
                     lastPromptLog = os.clock()
-                    log(string.format("Salah target: minta %s di %s, dapat %s di %s. Coba lagi.",
+                    log(string.format("Steal salah target: minta %s di %s, dapat %s di %s. Coba lagi.",
                         tostring(targetUid or i.name):sub(1, 12), targetArea,
                         tostring(lastCarry.uid or "?"):sub(1, 12), tostring(lastCarry.area or "?")))
                 end
@@ -99,14 +100,15 @@
         end
 
         if confirmed then
-            log("Egg berhasil diambil: " .. tostring(i.name) .. " @ " .. targetArea .. ".")
+            log("Prompt CarryAreaEgg berhasil: " .. tostring(i.name) .. " @ " .. targetArea .. ".")
         elseif anyPrompt then
             log("Prompt ditemukan tapi gagal mengambil " .. tostring(i.name) .. ".")
         elseif os.clock() - lastPromptLog > 6 then
             lastPromptLog = os.clock()
-            log("Prompt ambil tidak ditemukan (mungkin masih membawa egg).")
+            log("Prompt CarryAreaEgg tidak ditemukan (mungkin masih membawa egg).")
         end
 
+        galleryDirty = true
         if b then
             teleport(b)
             log("Kembali ke base" .. (baseSrc and (" (" .. tostring(baseSrc) .. ")") or "") .. ".")
@@ -126,17 +128,23 @@
         if #eggs == 0 then
             if os.clock() - lastNoEggLog > 6 then
                 lastNoEggLog = os.clock()
-                log("Tidak ada egg di area " .. AREAS[state.area][1] .. ".")
+                log("Tidak ada egg di AreaEggSlotsClient untuk area " .. AREAS[state.area][1] .. ".")
             end
             return false
         end
 
         local e
         if state.best then
+            if os.clock() - snapAt > 6 and os.clock() - lastSnapTry > 3 then
+                lastSnapTry = os.clock()
+                if refreshSnapshot(false) then
+                    clearInfoCache()
+                end
+            end
             e = pickBest(eggs)
             if not e then return false end
             local i = e.info
-            log(string.format("[Terbaik] %s | rar=%s prog=%s val=%s berat=%s chance=%s%s",
+            log(string.format("[Best] %s | rar=%s prog=%s val=%s berat=%s chance=%s%s",
                 tostring(i.name), tostring(i.rar), tostring(i.prog), fmtVal(i.val),
                 fmtKg(i.weight),
                 i.chance > 0 and ("1/" .. fmtVal(i.chance)) or "-",
@@ -144,9 +152,40 @@
         else
             stealIdx = (stealIdx % #eggs) + 1
             e = eggs[stealIdx]
-            log(string.format("[Bergiliran] egg %d/%d %s", stealIdx, #eggs, tostring(e.m.Name):sub(1, 24)))
+            log(string.format("[Rotasi] egg %d/%d %s", stealIdx, #eggs, tostring(e.m.Name):sub(1, 24)))
         end
 
         return doSteal(e, manual)
+    end
+
+    -- Dipakai tombol Steal di kartu halaman Egg.
+    local function stealEgg(e)
+        if not e then return end
+        if busy then
+            if ui then ui:toast("Masih sibuk, tunggu sebentar.", "warn") end
+            return
+        end
+
+        -- Ambil entri terbaru supaya posisi egg tidak basi.
+        local fresh
+        for _, x in ipairs(areaEggs()) do
+            if x.m == e.m or (e.m and x.m.Name == e.m.Name) then fresh = x; break end
+        end
+        if not fresh then
+            if ui then ui:toast("Egg sudah tidak ada. Muat ulang galeri.", "warn") end
+            galleryDirty = true
+            return
+        end
+        e = fresh
+
+        busy = true
+        local i = e.info or eggInfoCached(e.m)
+        if ui then ui:toast("Mengambil " .. tostring(i.name) .. "...") end
+        task.spawn(function()
+            local ok, err = pcall(doSteal, e, true)
+            if not ok then log("ERROR steal egg: " .. tostring(err)) end
+            busy = false
+            galleryDirty = true
+        end)
     end
 

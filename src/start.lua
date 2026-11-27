@@ -6,11 +6,26 @@
     updateHome()
 
     task.spawn(function()
-        -- Beri game waktu selesai spawn sebelum cari area terbaik.
+        -- Beri game waktu selesai spawn sebelum kerja berat (snapshot/scan).
         task.wait(1.2)
-        if not running then return end
+        if not running or not refreshSnapshot(false) then return end
+        clearInfoCache()
+        galleryDirty = true
+        gallerySig = ""
         if state.autoArea then pcall(pickBestArea, false) end
         if ui.current == "home" and updateHome then updateHome() end
+
+        -- Probe debug ditunda supaya tidak bersamaan dengan snapshot + UI awal.
+        if state.probe then
+            task.spawn(function()
+                task.wait(5)
+                if not running then return end
+                -- Baca katalog client sekali setelah UI tenang, bukan saat entry.
+                pcall(catalog.read, false)
+                pcall(debugProbeAll, false)
+                if ui.current == "home" and updateHome then updateHome() end
+            end)
+        end
     end)
 end
 

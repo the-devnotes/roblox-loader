@@ -1,5 +1,5 @@
     --[[ ===================== 16. AUTO PAGE ===================== ]]
-    local pgAuto = ui:page("auto", "Tetas & Jual", "⚙️")
+    local pgAuto = ui:page("auto", "Tetas & Jual", "gear")
     pgAuto:section("Tetaskan Egg")
     local hatchToggle = pgAuto:toggle("Tetaskan Egg Otomatis", state.hatch, function(v) setFlag("hatch", v) end)
     bind("hatch", hatchToggle)

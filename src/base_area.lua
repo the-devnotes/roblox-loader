@@ -97,8 +97,13 @@
         for _, w in ipairs(areaRefs) do w:set(i) end
         for _, w in ipairs(toggleRefs.allAreas or {}) do w:set(false) end
         if areaAutoRef then areaAutoRef:set(state.autoArea) end
+        galleryDirty = true
+        gallerySig = ""
         if not silent then log("Area dipilih: " .. AREAS[i][1]) end
         if updateHome then updateHome() end
+        -- Auto area (silent) akan dibangun ulang oleh loop galeri; hindari
+        -- 2x rebuild kartu 3D saat boot.
+        if not silent and galleryRefresh then pcall(galleryRefresh, true) end
     end
 
     -- Pilih area yang berisi egg paling bagus (bukan selalu Forest).
@@ -120,7 +125,7 @@
         end
         if best and best ~= state.area then
             setArea(best, true)
-            if not silent then log("Cari area terbaik: " .. AREAS[best][1]) end
+            if not silent then log("Auto pilih area terbaik: " .. AREAS[best][1]) end
         end
         return best
     end

@@ -1,5 +1,5 @@
     --[[ ===================== 18. AREA PAGE ===================== ]]
-    local pgArea = ui:page("area", "Area", "🗺️")
+    local pgArea = ui:page("area", "Area", "map")
     pgArea:section("Pilih Area")
     local areaDrop = pgArea:dropdown("Area", AREA_NAMES, state.area, function(_, idx) setArea(idx, false, true) end)
     areaRefs[#areaRefs + 1] = areaDrop
