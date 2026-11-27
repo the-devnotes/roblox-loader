@@ -1,12 +1,19 @@
 -- [Script] | Lokasi: ServerScriptService
 --[[
-    Clipper Hub Loader - Bike For Eggs
+    Clipper Hub Loader - Bike For Egg!
 
     Struktur mengikuti contoh kamu persis:
     VERSION, HUB_NAME, games[GameId] = URL, deteksi game, fallback universal.
 
     Satu-satunya yang beda: kode diambil pakai HttpService:GetAsync (API resmi
     Roblox), bukan game:HttpGet (global executor).
+
+    Data game (dicek dari API Roblox):
+    https://www.roblox.com/games/74023858073178/Bike-For-Egg
+    game.GameId (UniverseId) = 10766620257
+    game.PlaceId             = 74023858073178
+    Nama                     = Bike For Egg!
+    Creator                  = Huron Games
 ]]
 
 -- ============================================================
@@ -16,8 +23,13 @@ local VERSION       = "9.5"
 local HUB_NAME      = "Clipper Hub"
 local LOGO_ASSET_ID = 102269948329032
 
--- Nama tampilan. Diisi otomatis dari games / universal.
+-- Nama tampilan. Diisi otomatis dari DAFTAR_NAMA saat deteksi.
 local NAME_GAME = "Mendeteksi..."
+
+local DAFTAR_NAMA = {
+    [10766620257] = "Bike For Egg!",
+    Universal     = "Game Lain",
+}
 
 -- ============================================================
 -- 2. DAFTAR GAME YANG DIDUKUNG
@@ -28,18 +40,13 @@ local REPO = "https://raw.githubusercontent.com/the-devnotes/BikeForEggs/main"
 local SCRIPT_BFE = REPO .. "/dist/BikeForEggs_AllInOne.lua"
 
 -- Format: [UniverseId / game.GameId] = "URL script"
--- PlaceId juga didukung lewat lookup kedua di bawah.
 local games = {
-    -- Ganti 0 dengan GameId Bike For Eggs asli (cek: print(game.GameId)).
-    [0] = SCRIPT_BFE,
-
-    -- Contoh dari loader kamu (bukan Bike For Eggs, jangan dipakai kalau bukan):
-    -- [87689849729828] = SCRIPT_BFE,
-    -- [74023858073178] = SCRIPT_BFE,
+    [10766620257] = SCRIPT_BFE, -- Bike For Egg!
 }
 
+-- Cadangan kalau yang terbaca PlaceId.
 local gamesByPlace = {
-    -- [PlaceId] = SCRIPT_BFE,
+    [74023858073178] = SCRIPT_BFE, -- root place Bike For Egg!
 }
 
 -- Dipakai kalau GameId/PlaceId tidak ada di daftar.
@@ -53,9 +60,9 @@ local placeId    = game.PlaceId
 local scriptURL  = games[universeId] or gamesByPlace[placeId]
 
 if scriptURL then
-    NAME_GAME = "Bike For Eggs"
+    NAME_GAME = DAFTAR_NAMA[universeId] or DAFTAR_NAMA[placeId] or "Bike For Egg!"
 else
-    NAME_GAME = "Game Lain"
+    NAME_GAME = DAFTAR_NAMA.Universal
     scriptURL = UNIVERSAL
 end
 
