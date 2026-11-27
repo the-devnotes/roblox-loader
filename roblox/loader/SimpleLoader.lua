@@ -1,31 +1,24 @@
--- [Script] | Lokasi: ServerScriptService
--- Loader simpel: daftar script -> deteksi game -> jalankan yang cocok.
+-- Script | ServerScriptService
 
 local HttpService = game:GetService("HttpService")
 local RS = game:GetService("ReplicatedStorage")
 
--- Identitas hub / game
-local VERSION = "9.5"                 -- versi loader
-local LOGO_ASSET_ID = 102269948329032 -- AssetId gambar logo
-local HUB_NAME = "Clipper Hub"        -- nama hub
-local NAME_GAME = "Mendeteksi..."     -- diisi otomatis oleh auto()
+local VERSION = "9.5"
+local LOGO_ASSET_ID = 102269948329032
+local HUB_NAME = "Clipper Hub"
+local NAME_GAME = "Mendeteksi..."
 
--- Data game (https://www.roblox.com/games/74023858073178/Bike-For-Egg):
--- game.GameId (UniverseId) = 10766620257
--- game.PlaceId             = 74023858073178
 local REPO = "https://raw.githubusercontent.com/the-devnotes/BikeForEggs/main"
 local SCRIPT_BFE = REPO .. "/dist/BikeForEggs_AllInOne.lua"
 
--- Nama tampilan per game (opsional). Kalau tidak ada, pakai nama script-nya.
 local DAFTAR_NAMA = {
 	BikeForEgg = "Bike For Egg!",
 	Universal = "Game Lain",
 }
 
-local sources = {} -- nama -> sumber
-local cache = {}   -- nama -> kode (biar tidak fetch dua kali)
+local sources = {}
+local cache = {}
 
--- Pemetaan: GameId utama, PlaceId cadangan
 local byGame = {
 	[10766620257] = "BikeForEgg",
 }
@@ -46,7 +39,6 @@ local function run(nama, ...)
 		return false
 	end
 
-	-- Ambil kode. URL -> HTTP, selain itu -> ModuleScript di ReplicatedStorage.
 	local kode = cache[nama]
 	if not kode then
 		local ok, hasil = pcall(function()
@@ -65,7 +57,6 @@ local function run(nama, ...)
 		cache[nama] = kode
 	end
 
-	-- Compile + jalankan. Error satu script tidak menghentikan yang lain.
 	local okLoad, chunk = pcall(loadstring, kode, nama)
 	if not okLoad or not chunk then
 		warn(("[%s] %s: gagal loadstring - %s"):format(HUB_NAME, nama, tostring(chunk)))
@@ -84,7 +75,6 @@ end
 local function auto(ikutUniversal)
 	local nama = byGame[game.GameId] or byPlace[game.PlaceId]
 
-	-- NAME_GAME menyesuaikan game yang cocok di daftar (atau Universal).
 	NAME_GAME = DAFTAR_NAMA[nama] or nama or DAFTAR_NAMA.Universal
 	print(("[%s v%s] %s | Logo AssetId: %d"):format(HUB_NAME, VERSION, NAME_GAME, LOGO_ASSET_ID))
 
@@ -92,7 +82,6 @@ local function auto(ikutUniversal)
 		print(("[%s] Game dikenal -> %s"):format(HUB_NAME, NAME_GAME))
 		run(nama)
 	else
-		-- Game tidak dikenal: universal dipakai sebagai cadangan.
 		print(("[%s] Game tidak dikenal -> %s"):format(HUB_NAME, NAME_GAME))
 		ikutUniversal = true
 	end
@@ -102,9 +91,6 @@ local function auto(ikutUniversal)
 	end
 end
 
--- ============================================================
--- UI BAWAAN (biar tampilan semua script yang di-load konsisten)
--- ============================================================
 local function ui(player, judul, tombol)
 	if not player then return nil end
 
@@ -172,7 +158,6 @@ local function ui(player, judul, tombol)
 	return gui, frame
 end
 
--- Script yang di-load tinggal manggil shared.ClipperHub.ui(...)
 shared.ClipperHub = {
 	ui = ui,
 	run = run,
@@ -180,13 +165,7 @@ shared.ClipperHub = {
 	auto = auto,
 }
 
--- ================= DAFTAR SUMBER =================
--- Bisa URL https://... (HttpService:GetAsync) atau nama ModuleScript di ReplicatedStorage.
--- ModuleScript "Universal_Source" isinya: return [[ print("Universal jalan") ]]
 register("BikeForEgg", SCRIPT_BFE)
 register("Universal", SCRIPT_BFE)
 
--- Game dikenal -> jalankan script game itu saja.
--- Game tidak dikenal -> auto() otomatis pakai "Universal".
--- Pakai auto(true) kalau mau Universal ikut jalan juga (hati-hati: script sama bisa dobel).
 auto()

@@ -1,5 +1,4 @@
--- [Script] | Lokasi: ServerScriptService
--- Loader script universal: satu file, banyak script, deteksi game otomatis.
+-- Script | ServerScriptService
 
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -7,12 +6,11 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Loader = {}
 
-local REGISTRY = {} -- nama -> sumber (URL / "local:Nama" / Instance)
-local CACHE = {}    -- nama -> kode string (fetch hanya sekali)
+local REGISTRY = {}
+local CACHE = {}
 
 local UNIVERSAL_DEFAULT = "Universal"
 
--- Cek sekali di awal biar pesannya jelas kalau setting belum aktif.
 if not ServerScriptService.LoadStringEnabled then
 	warn("[Loader] LoadStringEnabled masih false - aktifkan di Properties > ServerScriptService.")
 end
@@ -21,25 +19,17 @@ local function gagal(nama, pesan)
 	warn(("[Loader] %s: %s"):format(tostring(nama), tostring(pesan)))
 end
 
--- ============================================================
--- PEMETAAN GAME
--- GameId = utama, PlaceId = cadangan
--- ============================================================
 local REPO = "https://raw.githubusercontent.com/the-devnotes/BikeForEggs/main"
 local SCRIPT_BFE = REPO .. "/dist/BikeForEggs_AllInOne.lua"
 
--- Bike For Egg! -> https://www.roblox.com/games/74023858073178/Bike-For-Egg
 local BY_GAME_ID = {
-	[10766620257] = "BikeForEgg", -- UniverseId
+	[10766620257] = "BikeForEgg",
 }
 
 local BY_PLACE_ID = {
-	[74023858073178] = "BikeForEgg", -- PlaceId
+	[74023858073178] = "BikeForEgg",
 }
 
--- ============================================================
--- REGISTER
--- ============================================================
 function Loader.register(nama, sumber)
 	if type(nama) ~= "string" or nama == "" then
 		gagal("register", "nama harus string tidak kosong")
@@ -55,16 +45,10 @@ function Loader.register(nama, sumber)
 	end
 
 	REGISTRY[nama] = sumber
-	CACHE[nama] = nil -- buang cache lama kalau sumber diganti
+	CACHE[nama] = nil
 	return true
 end
 
--- ============================================================
--- AMBIL SUMBER LOKAL
--- ModuleScript -> return string / table.Source
--- StringValue  -> .Value
--- Script/LocalScript -> .Source
--- ============================================================
 local function dariObjek(nama, obj)
 	if not obj then
 		return nil, "objek lokal tidak ditemukan"
@@ -95,7 +79,6 @@ local function dariObjek(nama, obj)
 end
 
 local function fetch(nama, sumber)
-	-- Instance langsung dipakai
 	if typeof(sumber) == "Instance" then
 		return dariObjek(nama, sumber)
 	end
@@ -104,7 +87,6 @@ local function fetch(nama, sumber)
 		return nil, "sumber harus string URL / 'local:Nama' / Instance"
 	end
 
-	-- Sumber dari URL
 	if sumber:match("^https?://") then
 		local ok, isi = pcall(function()
 			return HttpService:GetAsync(sumber)
@@ -121,7 +103,6 @@ local function fetch(nama, sumber)
 		return isi
 	end
 
-	-- Sumber lokal dari script itu sendiri atau ReplicatedStorage
 	local kunci = sumber:match("^local:(.+)$") or sumber
 	local obj = script:FindFirstChild(kunci) or ReplicatedStorage:FindFirstChild(kunci)
 	if not obj then
@@ -130,9 +111,6 @@ local function fetch(nama, sumber)
 	return dariObjek(nama, obj)
 end
 
--- ============================================================
--- RUN
--- ============================================================
 function Loader.run(nama, ...)
 	local sumber = REGISTRY[nama]
 	if sumber == nil then
@@ -140,7 +118,6 @@ function Loader.run(nama, ...)
 		return false
 	end
 
-	-- CACHE: kalau sudah pernah di-fetch, pakai lagi yang lama.
 	local kode = CACHE[nama]
 	if kode == nil then
 		local pesan
@@ -152,7 +129,6 @@ function Loader.run(nama, ...)
 		CACHE[nama] = kode
 	end
 
-	-- loadstring bisa error kalau LoadStringEnabled false, jadi tetap di-pcall.
 	local okLoad, chunk, loadErr = pcall(loadstring, kode, "=Loader:" .. tostring(nama))
 	if not okLoad then
 		gagal(nama, "loadstring tidak tersedia: " .. tostring(chunk))
@@ -172,9 +148,6 @@ function Loader.run(nama, ...)
 	return true
 end
 
--- ============================================================
--- DETEKSI GAME
--- ============================================================
 function Loader.detect()
 	local gameId = game.GameId
 	local placeId = game.PlaceId
@@ -182,12 +155,6 @@ function Loader.detect()
 	return nama, gameId, placeId
 end
 
--- ============================================================
--- AUTO
--- options.includeUniversal : bool, jalankan universal juga saat game dikenal
--- options.universalName    : ganti nama script universal
--- options.args             : tabel argumen yang dilempar ke script
--- ============================================================
 function Loader.auto(options)
 	options = options or {}
 	if type(options) == "boolean" then
@@ -208,7 +175,6 @@ function Loader.auto(options)
 		sukses = sukses and ok
 		hasil[nama] = ok
 	else
-		-- Game tidak dikenal: script universal WAJIB jalan sebagai cadangan.
 		print(("[Loader] Game belum dikenal: GameId=%d PlaceId=%d -> pakai '%s'"):format(gameId, placeId, universalName))
 		includeUniversal = true
 	end
@@ -222,9 +188,6 @@ function Loader.auto(options)
 	return sukses, hasil
 end
 
--- ============================================================
--- UTIL
--- ============================================================
 function Loader.clearCache(nama)
 	if nama then
 		CACHE[nama] = nil
@@ -233,17 +196,9 @@ function Loader.clearCache(nama)
 	end
 end
 
--- ============================================================
--- DAFTAR SUMBER
--- ============================================================
--- "local:Nama" = ModuleScript di ReplicatedStorage.
--- URL https://... diambil lewat HttpService:GetAsync.
-Loader.register("BikeForEgg", SCRIPT_BFE)             -- URL repo BikeForEggs
-Loader.register("Universal", "local:Universal_Source") -- cadangan
+Loader.register("BikeForEgg", SCRIPT_BFE)
+Loader.register("Universal", "local:Universal_Source")
 
--- Jalankan otomatis. Game dikenal -> script itu saja.
--- Game tidak dikenal -> Universal dipakai.
--- Pakai includeUniversal = true kalau mau keduanya jalan.
 local sukses, hasil = Loader.auto({ includeUniversal = false })
 print("[Loader] Selesai. Sukses:", sukses, "Detail:", hasil)
 

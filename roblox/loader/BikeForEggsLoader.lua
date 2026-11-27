@@ -1,29 +1,9 @@
--- [Script] | Lokasi: ServerScriptService
---[[
-    Clipper Hub Loader - Bike For Egg!
+-- Script | ServerScriptService
 
-    Struktur mengikuti contoh kamu persis:
-    VERSION, HUB_NAME, games[GameId] = URL, deteksi game, fallback universal.
-
-    Satu-satunya yang beda: kode diambil pakai HttpService:GetAsync (API resmi
-    Roblox), bukan game:HttpGet (global executor).
-
-    Data game (dicek dari API Roblox):
-    https://www.roblox.com/games/74023858073178/Bike-For-Egg
-    game.GameId (UniverseId) = 10766620257
-    game.PlaceId             = 74023858073178
-    Nama                     = Bike For Egg!
-    Creator                  = Huron Games
-]]
-
--- ============================================================
--- 1. IDENTITAS
--- ============================================================
-local VERSION       = "9.5"
-local HUB_NAME      = "Clipper Hub"
+local VERSION = "9.5"
+local HUB_NAME = "Clipper Hub"
 local LOGO_ASSET_ID = 102269948329032
 
--- Nama tampilan. Diisi otomatis dari DAFTAR_NAMA saat deteksi.
 local NAME_GAME = "Mendeteksi..."
 
 local DAFTAR_NAMA = {
@@ -31,30 +11,19 @@ local DAFTAR_NAMA = {
     Universal     = "Game Lain",
 }
 
--- ============================================================
--- 2. DAFTAR GAME YANG DIDUKUNG
--- ============================================================
--- Sumber di repo Bike For Eggs kamu (private).
--- Raw GitHub hanya bisa dibaca Roblox kalau repo-nya PUBLIC.
 local REPO = "https://raw.githubusercontent.com/the-devnotes/BikeForEggs/main"
 local SCRIPT_BFE = REPO .. "/dist/BikeForEggs_AllInOne.lua"
 
--- Format: [UniverseId / game.GameId] = "URL script"
 local games = {
-    [10766620257] = SCRIPT_BFE, -- Bike For Egg!
+    [10766620257] = SCRIPT_BFE,
 }
 
--- Cadangan kalau yang terbaca PlaceId.
 local gamesByPlace = {
-    [74023858073178] = SCRIPT_BFE, -- root place Bike For Egg!
+    [74023858073178] = SCRIPT_BFE,
 }
 
--- Dipakai kalau GameId/PlaceId tidak ada di daftar.
 local UNIVERSAL = SCRIPT_BFE
 
--- ============================================================
--- 3. DETEKSI GAME (JANGAN DIUBAH)
--- ============================================================
 local universeId = game.GameId
 local placeId    = game.PlaceId
 local scriptURL  = games[universeId] or gamesByPlace[placeId]
@@ -66,17 +35,11 @@ else
     scriptURL = UNIVERSAL
 end
 
--- ============================================================
--- 4. PRINT INFO
--- ============================================================
 print(string.format(
     "[%s v%s] %s | PlaceId: %d | UniverseId: %d | Logo: rbxassetid://%d",
     HUB_NAME, VERSION, NAME_GAME, placeId, universeId, LOGO_ASSET_ID
 ))
 
--- ============================================================
--- 5. LOAD SCRIPT
--- ============================================================
 local HttpService = game:GetService("HttpService")
 local cache = {}
 
@@ -112,12 +75,8 @@ if kode then
         warn(string.format("[%s] Error saat jalan: %s", HUB_NAME, tostring(errRun)))
     end
 else
-    local msg = string.format(
-        "\n[%s] Gagal ambil script dari repo!\nPlaceId: %d\nUniverseId: %d\nError: %s\n" ..
-        "Catatan: repo the-devnotes/BikeForEggs masih private -> raw URL 404.\n" ..
-        "Buat public, atau pakai dist/BikeForEggs_AllInOne.lua (hex, tanpa URL).",
+    warn(string.format(
+        "[%s] Gagal ambil script | PlaceId: %d | UniverseId: %d | Error: %s",
         HUB_NAME, placeId, universeId, tostring(err)
-    )
-    warn(msg)
-    print(msg)
+    ))
 end
