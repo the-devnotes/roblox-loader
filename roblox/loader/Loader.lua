@@ -4,7 +4,7 @@ local VERSION = "9.5"
 local HUB_NAME = "Clipper Hub"
 local LOGO_ASSET_ID = 102269948329032
 
-local REPO = "https://raw.githubusercontent.com/the-devnotes/BikeForEggs/main"
+local REPO = "https://raw.githubusercontent.com/the-devnotes/roblox-loader/main"
 local BFE = REPO .. "/dist/BikeForEggs_AllInOne.lua"
 
 local games = {
